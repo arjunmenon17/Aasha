@@ -330,7 +330,7 @@ Risk tier definitions:
     # First attempt
     try:
         response = client.messages.create(
-            model="claude-opus-4-5-20250514",
+            model="claude-opus-4-5",
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -350,7 +350,7 @@ Risk tier definitions:
         logger.warning("First Claude parse failed, retrying...")
         try:
             response = client.messages.create(
-                model="claude-opus-4-5-20250514",
+                model="claude-opus-4-5",
                 max_tokens=2000,
                 messages=[
                     {"role": "user", "content": prompt},

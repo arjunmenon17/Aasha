@@ -41,7 +41,7 @@ Which option number best matches the patient's response? Reply with ONLY the num
     try:
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-haiku-4-5",
             max_tokens=10,
             messages=[{"role": "user", "content": prompt}],
         )
