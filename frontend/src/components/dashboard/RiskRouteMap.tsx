@@ -134,24 +134,51 @@ function buildRoute(nodes: MapNode[]): MapNode[] {
   }
   if (pool.length <= 1) return pool;
 
-  const remaining = [...pool];
-  const route: MapNode[] = [];
-  route.push(remaining.shift() as MapNode);
-
-  while (remaining.length > 0) {
-    const current = route[route.length - 1];
-    let bestIdx = 0;
-    let bestScore = Infinity;
-    for (let i = 0; i < remaining.length; i++) {
-      const cand = remaining[i];
-      const score = distKm(current, cand) - cand.priority * 0.015;
-      if (score < bestScore) {
-        bestScore = score;
-        bestIdx = i;
-      }
-    }
-    route.push(remaining.splice(bestIdx, 1)[0]);
+  const orderTiers: RiskTier[] = [3, 2, 1, 0];
+  const byTier = new Map<RiskTier, MapNode[]>();
+  for (const tier of orderTiers) {
+    byTier.set(
+      tier,
+      pool
+        .filter((n) => n.tier === tier)
+        .sort((a, b) => b.priority - a.priority),
+    );
   }
+
+  const route: MapNode[] = [];
+  let current: MapNode | null = null;
+
+  // Hard rule: finish higher-risk tiers before moving to lower tiers.
+  // Distance only breaks ties within the same tier.
+  for (const tier of orderTiers) {
+    const remaining = [...(byTier.get(tier) ?? [])];
+    if (remaining.length === 0) continue;
+
+    while (remaining.length > 0) {
+      let bestIdx = 0;
+      if (current === null) {
+        // First stop overall: highest-priority patient in highest available tier.
+        bestIdx = 0;
+      } else {
+        let bestDistance = Infinity;
+        let bestPriority = -Infinity;
+        for (let i = 0; i < remaining.length; i++) {
+          const cand = remaining[i];
+          const d = distKm(current, cand);
+          if (d < bestDistance || (Math.abs(d - bestDistance) < 1e-6 && cand.priority > bestPriority)) {
+            bestDistance = d;
+            bestPriority = cand.priority;
+            bestIdx = i;
+          }
+        }
+      }
+
+      const next = remaining.splice(bestIdx, 1)[0];
+      route.push(next);
+      current = next;
+    }
+  }
+
   return route;
 }
 
@@ -442,8 +469,8 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
           <div className="text-[0.68rem] uppercase tracking-[0.16em] text-slate-500 mb-1">
             Suggested Route
           </div>
-          <div className="text-base font-bold text-slate-900 mb-1">
-            Visit order (risk + distance)
+          <div className="text-sm font-semibold text-slate-900 mb-1">
+            Visit Order(high risk first)
           </div>
           <div className="text-[0.7rem] text-slate-500 mb-2 shrink-0">
             {route.length} stops · approx {distanceKm.toFixed(1)} km

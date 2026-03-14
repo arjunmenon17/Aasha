@@ -127,7 +127,14 @@ def _parse_where(clause) -> dict:
         return params
 
     right = clause.right
-    value = getattr(right, "value", getattr(right, "effective_value", None))
+    # SQLAlchemy wraps boolean literals as True_()/False_() which have no .value
+    from sqlalchemy.sql.elements import True_, False_
+    if isinstance(right, True_):
+        value = True
+    elif isinstance(right, False_):
+        value = False
+    else:
+        value = getattr(right, "value", getattr(right, "effective_value", None))
     op = clause.operator
     op_name = getattr(op, "__name__", "") or ""
 
