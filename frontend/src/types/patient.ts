@@ -49,6 +49,9 @@ export interface Patient {
   check_in_frequency: string;
   current_risk_tier: RiskTier;
   risk_factors?: Record<string, boolean>;
+  location_label?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
   consecutive_misses?: number;
   updated_at: string;
 }

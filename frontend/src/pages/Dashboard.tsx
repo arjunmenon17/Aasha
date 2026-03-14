@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PatientList, Severity3DGraph } from '@/components/dashboard';
+import { PatientList, RiskRouteMap, Severity3DGraph } from '@/components/dashboard';
 import type { PatientsResponse, RiskTier } from '@/types';
 import {
   ResponsiveContainer,
@@ -209,6 +209,9 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
           </div>
         </div>
       </div>
+
+      {/* Full-width route map */}
+      <RiskRouteMap patients={data.patients} onSelectPatient={onSelectPatient} />
 
       {/* Full-width 3D severity graph */}
       <Severity3DGraph patients={data.patients} onSelectPatient={onSelectPatient} />
