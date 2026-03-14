@@ -17,6 +17,36 @@ function randomInRange(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function repelPoint(
+  px: number,
+  py: number,
+  cx: number,
+  cy: number,
+  radius: number,
+  strength: number
+) {
+  const dx = px - cx;
+  const dy = py - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist >= radius || dist === 0) {
+    return { left: px, top: py };
+  }
+
+  const influence = (radius - dist) / radius;
+  const push = influence * strength;
+  const ux = dx / dist;
+  const uy = dy / dist;
+
+  return {
+    left: clamp(px + ux * push, 2, 98),
+    top: clamp(py + uy * push, 2, 98),
+  };
+}
+
 // Avoid flowers overlapping the central content block
 // Forbidden zone is approximate: middle 40% horizontally and 40% vertically.
 function randomPositionAvoidingCenter() {
@@ -44,6 +74,7 @@ function randomPositionAvoidingCenter() {
 export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
+  const [hovering, setHovering] = useState(false);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const ORB_COLORS = ['#fda4af', '#fb7185', '#f9a8d4', '#fecdd3', '#fbcfe8'];
@@ -104,7 +135,8 @@ export function Login({ onEnter }: LoginProps) {
   const contentShiftY = (cursor.y - 50) * -0.1;
   const orbsShiftX = (cursor.x - 50) * 0.1;
   const orbsShiftY = (cursor.y - 50) * 0.08;
-  const clearRadius = 170;
+  const repelRadius = 11;
+  const repelStrength = 8;
 
   const handleMouseMove = (ev: MouseEvent<HTMLDivElement>) => {
     const rect = ev.currentTarget.getBoundingClientRect();
@@ -117,49 +149,48 @@ export function Login({ onEnter }: LoginProps) {
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-white"
       onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
     >
       {/* Animated orbs + flowers */}
       <div
         className="absolute inset-0 pointer-events-none overflow-hidden"
         style={{
           transform: `translate3d(${orbsShiftX}px, ${orbsShiftY}px, 0)`,
-          WebkitMaskImage: `radial-gradient(${clearRadius}px circle at ${cursor.x}% ${cursor.y}%, transparent 0%, transparent 54%, black 76%)`,
-          maskImage: `radial-gradient(${clearRadius}px circle at ${cursor.x}% ${cursor.y}%, transparent 0%, transparent 54%, black 76%)`,
         }}
       >
-        {orbs.map((orb) => (
-          <div
-            key={orb.id}
-            className="login-orb absolute rounded-full blur-3xl"
-            style={{
-              left: `${orb.left}%`,
-              top: `${orb.top}%`,
-              width: orb.size,
-              height: orb.size,
-              backgroundColor: orb.color,
-              animationDelay: `${orb.delay}ms`,
-            }}
-          />
-        ))}
-        {flowers.map((f) => (
-          <Flower key={f.id} left={f.left} top={f.top} size={f.size} />
-        ))}
+        {orbs.map((orb) => {
+          const p = hovering
+            ? repelPoint(orb.left, orb.top, cursor.x, cursor.y, repelRadius, repelStrength)
+            : { left: orb.left, top: orb.top };
+          return (
+            <div
+              key={orb.id}
+              className="login-orb absolute rounded-full blur-3xl"
+              style={{
+                left: `${p.left}%`,
+                top: `${p.top}%`,
+                width: orb.size,
+                height: orb.size,
+                backgroundColor: orb.color,
+                animationDelay: `${orb.delay}ms`,
+                transition: 'left 90ms ease-out, top 90ms ease-out',
+              }}
+            />
+          );
+        })}
+        {flowers.map((f) => {
+          const p = hovering
+            ? repelPoint(f.left, f.top, cursor.x, cursor.y, repelRadius, repelStrength + 4)
+            : { left: f.left, top: f.top };
+          return <Flower key={f.id} left={p.left} top={p.top} size={f.size} />;
+        })}
       </div>
 
       <div
         className="absolute inset-0 pointer-events-none z-[2]"
         style={{
-          background: `radial-gradient(520px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 62%)`,
-        }}
-      />
-      <div
-        className="absolute pointer-events-none z-[3] rounded-full login-clear-ring"
-        style={{
-          left: `${cursor.x}%`,
-          top: `${cursor.y}%`,
-          width: `${clearRadius * 2}px`,
-          height: `${clearRadius * 2}px`,
-          transform: 'translate(-50%, -50%)',
+          background: `radial-gradient(480px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0) 60%)`,
         }}
       />
 

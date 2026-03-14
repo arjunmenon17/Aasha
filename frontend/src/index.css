@@ -144,13 +144,6 @@ body {
 }
 
 /* Global cursor trail */
-/* Login cursor-clearing ring */
-.login-clear-ring {
-  border: 1px solid rgba(236, 72, 153, 0.25);
-  box-shadow: 0 0 30px rgba(236, 72, 153, 0.12), inset 0 0 36px rgba(255, 255, 255, 0.3);
-  transition: left 70ms linear, top 70ms linear;
-}
-
 /* Dashboard: 3D-style graph shell */
 .graph-3d-shell {
   perspective: 1200px;
