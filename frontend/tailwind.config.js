@@ -12,6 +12,11 @@ export default {
         'surface': '#1E293B',
         'text-primary': '#F1F5F9',
         'accent': '#3B82F6',
+        // Pregnancy / maternal theme (warm rose-red)
+        'pregnancy': '#B85050',
+        'pregnancy-light': '#D4566A',
+        'pregnancy-dark': '#9A4040',
+        'pregnancy-text': '#2D0F0F',   // very dark red for text on white
       },
     },
   },

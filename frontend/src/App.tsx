@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Dashboard } from '@/pages';
-import { PatientDetailPage } from '@/pages';
+import { Login, Dashboard, PatientDetailPage } from '@/pages';
 import { usePatients } from '@/hooks';
 import { demoApi } from '@/api';
 
 export function App() {
+  const [entered, setEntered] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const { data, lastRefresh, connected, error, refetch } = usePatients();
+
+  if (!entered) {
+    return <Login onEnter={() => setEntered(true)} />;
+  }
 
   if (!data) {
     return (
