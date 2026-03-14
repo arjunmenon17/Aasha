@@ -154,22 +154,27 @@ CREATE TABLE sms_log (
 -- =============================================================================
 -- SEED DATA (fixed UUIDs for reproducibility)
 -- =============================================================================
+-- Context: Rural, resource-limited setting in a low-income country. In-person
+-- care is scarce; one local health centre and one distant referral hospital.
+-- Aasha’s SMS monitoring helps bridge the gap between visits and surface who
+-- needs follow-up first.
+-- =============================================================================
 
--- Health zone (region = area code, rural Ontario N0G)
+-- Health zone: remote catchment, rural Kenya — limited facilities, care hard to access
 INSERT INTO health_zones (id, name, region) VALUES
-('a1000000-0000-4000-8000-000000000001', 'North Wellington Rural', 'N0G');
+('a1000000-0000-4000-8000-000000000001', 'Nyakach South (remote catchment), Kenya', 'KE-NY');
 
--- CHWs
+-- CHWs: only two for the whole zone; cover multiple villages
 INSERT INTO community_health_workers (id, name, phone_number, zone_id) VALUES
-('b2000000-0000-4000-8000-000000000001', 'Marie Lefebvre', '+15195551234', 'a1000000-0000-4000-8000-000000000001'),
-('b2000000-0000-4000-8000-000000000002', 'Sarah Chen', '+15195551235', 'a1000000-0000-4000-8000-000000000001');
+('b2000000-0000-4000-8000-000000000001', 'Grace Wanjiku', '+254700111222', 'a1000000-0000-4000-8000-000000000001'),
+('b2000000-0000-4000-8000-000000000002', 'Mary Akinyi', '+254700111333', 'a1000000-0000-4000-8000-000000000001');
 
--- Facilities
+-- Facilities: one local health centre; referral hospital is far (Kisumu town)
 INSERT INTO health_facilities (id, name, facility_level, phone_number, zone_id, capabilities) VALUES
-('c3000000-0000-4000-8000-000000000001', 'Listowel Memorial Hospital', 'district_hospital', '+15192915555', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
-('c3000000-0000-4000-8000-000000000002', 'Palmerston Community Health Centre', 'health_center', '+15195552222', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
+('c3000000-0000-4000-8000-000000000001', 'Kisumu County Referral Hospital', 'district_hospital', '+254572022333', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
+('c3000000-0000-4000-8000-000000000002', 'Nyakach Health Centre', 'health_center', '+254572022444', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
 
--- Patients (rural Ontario, Canada — N0G area: Listowel, Palmerston, Harriston)
+-- Patients: all in a rural area where resources are limited and care is hard to get
 INSERT INTO patients (
     id, name, phone_number, gestational_age_at_enrollment, enrollment_date, estimated_due_date,
     status, current_risk_tier, check_in_frequency, baseline, risk_factors,
@@ -177,8 +182,8 @@ INSERT INTO patients (
 ) VALUES
 (
     '1673852d-11b6-4fcc-a94f-7d1c3046b32a',
-    'Emily Morrison',
-    '+15195551001',
+    'Amina Hassan',
+    '+254711001001',
     196,
     now() - interval '30 days',
     now() + interval '54 days',
@@ -191,14 +196,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '1245 Concession Rd 4, Listowel, ON N4W 2G9',
-    43.7320,
-    -80.9480
+    'Olare Village, Nyakach, Kisumu',
+    -0.3520,
+    34.7820
 ),
 (
     'd4000000-0000-4000-8000-000000000002',
-    'Jennifer Walsh',
-    '+15195551002',
+    'Fatima Osman',
+    '+254711002002',
     224,
     now() - interval '30 days',
     now() + interval '26 days',
@@ -211,14 +216,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'RR 2, Palmerston, ON N0G 2P0',
-    43.8350,
-    -80.8510
+    'Near Soko Mjinga, Nyakach',
+    -0.3480,
+    34.7780
 ),
 (
     'd4000000-0000-4000-8000-000000000003',
-    'Amanda Reid',
-    '+15195551003',
+    'Sarah Njeri',
+    '+254711003003',
     140,
     now() - interval '30 days',
     now() + interval '110 days',
@@ -231,14 +236,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '88 Main St E, Harriston, ON N0G 1Z0',
-    43.9650,
-    -80.5630
+    'Kadiang''a, Kisumu West',
+    -0.3410,
+    34.7710
 ),
 (
     'd4000000-0000-4000-8000-000000000004',
-    'Michelle Thompson',
-    '+15195551004',
+    'Wanjiku Mwangi',
+    '+254711004004',
     252,
     now() - interval '30 days',
     now() - interval '2 days',
@@ -251,14 +256,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '2675 Line 86, Listowel, ON N4W 3H2',
-    43.7180,
-    -80.9620
+    'Rodi Kopany, Nyakach',
+    -0.3580,
+    34.7880
 ),
 (
     'd4000000-0000-4000-8000-000000000005',
-    'Kristen MacLeod',
-    '+15195551005',
+    'Aisha Mohamed',
+    '+254711005005',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -271,14 +276,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '3 days',
-    '412 Wellington Rd 109, Palmerston, ON N0G 2P0',
-    43.8280,
-    -80.8680
+    'Ombeyi Village, Nyakach',
+    -0.3450,
+    34.7750
 ),
 (
     'd4000000-0000-4000-8000-000000000006',
-    'Nicole Dubois',
-    '+15195551006',
+    'Zainab Ali',
+    '+254711006006',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -291,9 +296,169 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '5 days',
-    '156 Elora St, Harriston, ON N0G 1Z0',
-    43.9580,
-    -80.5710
+    'Suna Village, Nyakach',
+    -0.3550,
+    34.7680
+),
+(
+    'd4000000-0000-4000-8000-000000000007',
+    'Catherine Adhiambo',
+    '+254711007007',
+    168,
+    now() - interval '45 days',
+    now() + interval '102 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1, 2], "response_rate": 0.95, "checkins_completed": 4, "baseline_established": true}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Got Nyabondo, Nyakach',
+    -0.3380,
+    34.7920
+),
+(
+    'd4000000-0000-4000-8000-000000000008',
+    'Mary Wambui',
+    '+254711008008',
+    210,
+    now() - interval '20 days',
+    now() + interval '60 days',
+    'pregnant',
+    1,
+    'standard',
+    '{"headache_history": [1, 1, 2, 1, 1], "headache_frequency": 0.2, "typical_swelling_location": "1", "wellbeing_scores": [1, 2, 2, 1, 1], "response_rate": 0.9, "checkins_completed": 5, "baseline_established": true}',
+    '{"age_over_35": true}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'Koru, near Muhoroni',
+    -0.3320,
+    34.7650
+),
+(
+    'd4000000-0000-4000-8000-000000000009',
+    'Diana Atieno',
+    '+254711009009',
+    98,
+    now() - interval '60 days',
+    now() + interval '182 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1], "response_rate": 1.0, "checkins_completed": 2, "baseline_established": false}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Pap Onditi, Nyakach',
+    -0.3620,
+    34.7580
+),
+(
+    'd4000000-0000-4000-8000-00000000000a',
+    'Grace Achieng',
+    '+254711010010',
+    238,
+    now() - interval '25 days',
+    now() + interval '12 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1, 2, 1], "response_rate": 0.85, "checkins_completed": 6, "baseline_established": true}',
+    '{"primigravida": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'Awach, Nyakach',
+    -0.3680,
+    34.7850
+),
+(
+    'd4000000-0000-4000-8000-00000000000b',
+    'Mercy Akinyi',
+    '+254711011011',
+    266,
+    now() - interval '35 days',
+    now() - interval '8 days',
+    'postpartum',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1], "response_rate": 1.0, "checkins_completed": 12, "baseline_established": true}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    now() - interval '6 days',
+    'Rachar, Nyakach',
+    -0.3420,
+    34.7720
+),
+(
+    'd4000000-0000-4000-8000-00000000000c',
+    'Beatrice Muthoni',
+    '+254711012012',
+    182,
+    now() - interval '40 days',
+    now() + interval '88 days',
+    'pregnant',
+    2,
+    'daily',
+    '{"headache_history": [1, 2, 2, 2, 1], "headache_frequency": 0.6, "typical_swelling_location": "2", "wellbeing_scores": [2, 2, 1, 2, 2], "response_rate": 0.9, "checkins_completed": 5, "baseline_established": true}',
+    '{"chronic_hypertension": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'Sigoti, Nyakach',
+    -0.3510,
+    34.7610
+),
+(
+    'd4000000-0000-4000-8000-00000000000d',
+    'Patricia Wanjiru',
+    '+254711013013',
+    252,
+    now() - interval '28 days',
+    now() - interval '1 day',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 2, 1], "response_rate": 0.95, "checkins_completed": 5, "baseline_established": true}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'Sondu, border Nyakach',
+    -0.3270,
+    34.7980
+),
+(
+    'd4000000-0000-4000-8000-00000000000e',
+    'Rachel Nyambura',
+    '+254711014014',
+    126,
+    now() - interval '50 days',
+    now() + interval '144 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1], "response_rate": 1.0, "checkins_completed": 3, "baseline_established": false}',
+    '{"primigravida": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Upper Nyakach, remote',
+    -0.3750,
+    34.7520
 );
 
 -- Clinical assessments (Amina Tier 3, Fatima Tier 2)
@@ -309,7 +474,7 @@ INSERT INTO clinical_assessments (
     'Primigravida at 32 weeks presents with severe headache (3/3, >2 days), visual disturbances (seeing spots), facial and hand edema, and epigastric pain. This constellation of 4 concurrent preeclampsia danger signs in a primigravida at high-risk gestational age meets WHO criteria for urgent referral.',
     '[{"chunk_id": "figo_hd_2019_003", "source": "FIGO Hypertensive Disorders in Pregnancy Guidelines, 2019", "relevant_finding": "Visual disturbances, severe headache, epigastric pain, and sudden facial edema together indicate severe preeclampsia requiring urgent evaluation."}]',
     '{"risk_tier": 3, "escalate_immediately": true, "primary_concern": "Possible severe preeclampsia — 4 concurrent danger signs", "symptom_analysis": {"headache": {"reported": true, "value": "severity 3/3, >2 days", "baseline_deviation": "critical"}, "vision_disturbance": {"reported": true, "value": "seeing spots", "baseline_deviation": "critical"}, "swelling": {"reported": true, "value": "face and hands", "baseline_deviation": "critical"}, "abdominal_pain": {"reported": true, "value": "upper belly pain", "baseline_deviation": "critical"}}}',
-    '["Transport patient to Listowel Memorial Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
+    '["Transport patient to Kisumu County Referral Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
     '["Blood pressure not available via SMS"]',
     'severe headache persistent visual disturbance photopsia facial hand edema preeclampsia epigastric pain third trimester primigravida',
     '["figo_hd_2019_003", "who_pe_2011_007"]',

@@ -239,3 +239,46 @@ body {
 .severity-3d-column--active .severity-3d-bar-side {
   box-shadow: 0 0 16px rgba(248, 113, 113, 0.6);
 }
+
+/* Landing: signal / fade-in */
+.landing-signal-dot {
+  animation: landing-signal-pulse 2.5s ease-in-out infinite;
+}
+@keyframes landing-signal-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.landing-fade-in {
+  animation: landing-fade-in 0.9s ease-out forwards;
+}
+@keyframes landing-fade-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hide scrollbar but keep scroll behavior */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Risk route map: selected point on map (from list or click) */
+.aasha-marker-selected {
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.4));
+}
+
+/* Risk route map: outline ring pulse around point markers (dot stays solid) */
+.aasha-marker-ring-pulse {
+  animation: aasha-marker-ring-pulse 1.5s ease-in-out infinite;
+}
+@keyframes aasha-marker-ring-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.08;
+  }
+}

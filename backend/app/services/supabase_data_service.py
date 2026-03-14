@@ -152,6 +152,7 @@ def _normalize_patient(raw: dict) -> dict:
         p.get("location_label")
         or p.get("village")
         or p.get("locality")
+        or p.get("address")
     )
 
     # If no location in DB yet, generate deterministic demo-safe fallback.

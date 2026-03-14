@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { Patient, RiskTier } from '@/types';
 import { gestWeeks } from '@/utils/gestation';
 import { timeAgo } from '@/utils/time';
@@ -96,7 +96,9 @@ function toNodes(patients: Patient[]): MapNode[] {
     const lat = toNum(p.location_lat);
     const lng = toNum(p.location_lng);
     const label =
-      (typeof p.location_label === 'string' && p.location_label.trim()) || null;
+      (typeof p.location_label === 'string' && p.location_label.trim()) ||
+      (typeof p.address === 'string' && p.address.trim()) ||
+      null;
     const fallback = fallbackLocation(p);
 
     return {
@@ -221,6 +223,27 @@ function routeDistanceKm(route: MapNode[]): number {
   return total;
 }
 
+const OSRM_BASE = 'https://router.project-osrm.org';
+
+/** Fetch road/path-following walking route; returns [lat, lng][] or null on failure. */
+async function fetchWalkingRoute(waypoints: MapNode[]): Promise<LatLngTuple[] | null> {
+  if (waypoints.length < 2) return null;
+  const coords = waypoints.map((n) => `${n.lng},${n.lat}`).join(';');
+  const url = `${OSRM_BASE}/route/v1/foot/${coords}?overview=full&geometries=geojson`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      routes?: Array<{ geometry?: { coordinates?: [number, number][] } }>;
+    };
+    const coordsList = data.routes?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordsList) || coordsList.length < 2) return null;
+    return coordsList.map(([lng, lat]) => [lat, lng] as LatLngTuple);
+  } catch {
+    return null;
+  }
+}
+
 function sequenceIcon(sequence: number): L.DivIcon {
   return L.divIcon({
     className: '',
@@ -239,8 +262,123 @@ function FitToBounds({ bounds }: { bounds: L.LatLngBoundsExpression | null }) {
   return null;
 }
 
+interface NodeMarkersProps {
+  nodes: MapNode[];
+  routeIndex: Map<string, number>;
+  selectedId: string | null;
+  setSelectedId: (id: string | null) => void;
+  setHoveredId: React.Dispatch<React.SetStateAction<string | null>>;
+  onSelectPatient?: (id: string) => void;
+}
+
+function NodeMarkers({
+  nodes,
+  routeIndex,
+  selectedId,
+  setSelectedId,
+  setHoveredId,
+  onSelectPatient,
+}: NodeMarkersProps) {
+  const map = useMap();
+  const markerRefs = useRef<Record<string, L.CircleMarker | null>>({});
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const node = nodes.find((n) => n.id === selectedId);
+    if (!node) return;
+    map.flyTo([node.lat, node.lng], map.getZoom(), { duration: 0.4 });
+    const layer = markerRefs.current[selectedId];
+    const openPopup = () => {
+      layer?.openPopup();
+    };
+    const t = setTimeout(openPopup, 350);
+    return () => clearTimeout(t);
+  }, [selectedId, nodes, map]);
+
+  return (
+    <>
+      {nodes.map((n) => {
+        const sequence = routeIndex.get(n.id);
+        const radius = n.tier >= 2 ? 11 : 8;
+        const ringRadius = radius + 5;
+        return (
+          <Fragment key={n.id}>
+            <CircleMarker
+              key={`${n.id}-ring`}
+              center={[n.lat, n.lng]}
+              radius={ringRadius}
+              pathOptions={{
+                color: TIER_COLOR[n.tier],
+                weight: 2.5,
+                fillColor: TIER_COLOR[n.tier],
+                fillOpacity: 0,
+                className: 'aasha-marker-ring-pulse',
+              }}
+              interactive={false}
+            />
+            <CircleMarker
+              key={n.id}
+              center={[n.lat, n.lng]}
+              radius={radius}
+              pathOptions={{
+                color: '#ffffff',
+                weight: selectedId === n.id ? 3 : 1.5,
+                fillColor: TIER_COLOR[n.tier],
+                fillOpacity: 0.92,
+                className: selectedId === n.id ? 'aasha-marker-selected' : undefined,
+              }}
+              ref={(el) => {
+                if (el != null) {
+                  const layer = (el as { leafletElement?: L.CircleMarker }).leafletElement ?? (el as unknown as L.CircleMarker);
+                  markerRefs.current[n.id] = layer;
+                } else {
+                  markerRefs.current[n.id] = null;
+                }
+              }}
+              eventHandlers={{
+                mouseover: () => setHoveredId(n.id),
+                mouseout: () => setHoveredId((x) => (x === n.id ? null : x)),
+                click: () => setSelectedId(n.id),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -8]} opacity={0.96}>
+                <div className="text-xs">
+                  <div className="font-semibold">{n.name}</div>
+                  <div>
+                    Tier {n.tier} · {n.locationLabel}
+                  </div>
+                  {sequence ? <div>Stop #{sequence}</div> : null}
+                </div>
+              </Tooltip>
+              <Popup>
+                <div className="text-xs">
+                  <div className="font-semibold text-sm mb-1">{n.name}</div>
+                  <div>Tier {n.tier} · {tierLabel(n.tier)}</div>
+                  <div>Status: {n.status}</div>
+                  <div>Location: {n.locationLabel}</div>
+                  {onSelectPatient && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectPatient(n.id)}
+                      className="mt-2 w-full px-2 py-1.5 rounded border border-pregnancy text-pregnancy text-[0.7rem] font-medium hover:bg-pregnancy/10"
+                    >
+                      View full details
+                    </button>
+                  )}
+                </div>
+              </Popup>
+            </CircleMarker>
+          </Fragment>
+        );
+      })}
+    </>
+  );
+}
+
 export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [roadRouteLine, setRoadRouteLine] = useState<LatLngTuple[] | null>(null);
 
   const nodesRaw = useMemo(() => toNodes(patients), [patients]);
   const nodes = useMemo(() => deconflictNodes(nodesRaw), [nodesRaw]);
@@ -251,8 +389,25 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
     route.forEach((n, idx) => map.set(n.id, idx + 1));
     return map;
   }, [route]);
-  const hovered = hoveredId ? nodes.find((n) => n.id === hoveredId) ?? null : null;
-  const routeLine = route.map((n) => [n.lat, n.lng] as LatLngTuple);
+
+  const straightLine = useMemo(
+    () => route.map((n) => [n.lat, n.lng] as LatLngTuple),
+    [route],
+  );
+  const routeLine = roadRouteLine && roadRouteLine.length > 1 ? roadRouteLine : straightLine;
+
+  const routeKeyRef = useRef<string>('');
+  useEffect(() => {
+    const routeKey = route.map((n) => n.id).join(',');
+    routeKeyRef.current = routeKey;
+    setRoadRouteLine(null);
+    if (route.length < 2) return;
+    fetchWalkingRoute(route).then((geometry) => {
+      if (routeKeyRef.current !== routeKey) return;
+      setRoadRouteLine(geometry);
+    });
+  }, [route]);
+
   const distanceKm = routeDistanceKm(route);
 
   return (
@@ -267,13 +422,13 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
           </div>
         </div>
         <div className="text-[0.68rem] text-slate-500 text-right">
-          OSM basemap · click markers to open patient details
+          OSM basemap · click markers to show details in panel
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 rounded-xl border border-slate-200 overflow-hidden">
-          <div className="h-[420px] w-full">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 h-[480px] min-h-0">
+        <div className="xl:col-span-2 flex flex-col min-h-0 rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex-1 min-h-0 w-full">
             <MapContainer
               center={[-1.31, 36.78]}
               zoom={12}
@@ -287,61 +442,39 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
               <FitToBounds bounds={bounds} />
 
               {routeLine.length > 1 && (
-                <Polyline
-                  positions={routeLine}
-                  pathOptions={{
-                    color: '#0f172a',
-                    weight: 4,
-                    opacity: 0.75,
-                    dashArray: '8 8',
-                  }}
-                />
+                <>
+                  {/* Shadow / glow behind the route */}
+                  <Polyline
+                    positions={routeLine}
+                    pathOptions={{
+                      color: '#64748b',
+                      weight: 10,
+                      opacity: 0.35,
+                    }}
+                  />
+                  {/* Main dashed route line */}
+                  <Polyline
+                    positions={routeLine}
+                    pathOptions={{
+                      color: '#B85050',
+                      weight: 5,
+                      opacity: 0.92,
+                      dashArray: '14 8',
+                      lineCap: 'round',
+                      lineJoin: 'round',
+                    }}
+                  />
+                </>
               )}
 
-              {nodes.map((n) => {
-                const sequence = routeIndex.get(n.id);
-                const radius = n.tier >= 2 ? 11 : 8;
-                return (
-                  <CircleMarker
-                    key={n.id}
-                    center={[n.lat, n.lng]}
-                    radius={radius}
-                    pathOptions={{
-                      color: '#ffffff',
-                      weight: 1.5,
-                      fillColor: TIER_COLOR[n.tier],
-                      fillOpacity: 0.92,
-                    }}
-                    eventHandlers={{
-                      mouseover: () => setHoveredId(n.id),
-                      mouseout: () => setHoveredId((x) => (x === n.id ? null : x)),
-                      click: () => onSelectPatient?.(n.id),
-                    }}
-                  >
-                    <Tooltip direction="top" offset={[0, -8]} opacity={0.96}>
-                      <div className="text-xs">
-                        <div className="font-semibold">{n.name}</div>
-                        <div>
-                          Tier {n.tier} · {n.locationLabel}
-                        </div>
-                        {sequence ? <div>Stop #{sequence}</div> : null}
-                      </div>
-                    </Tooltip>
-                    <Popup>
-                      <div className="text-xs">
-                        <div className="font-semibold text-sm mb-1">{n.name}</div>
-                        <div>Tier {n.tier} · {tierLabel(n.tier)}</div>
-                        <div>Status: {n.status}</div>
-                        <div>Location: {n.locationLabel}</div>
-                        <div>
-                          Coords: {n.lat.toFixed(4)}, {n.lng.toFixed(4)}
-                        </div>
-                        <div className="mt-1 text-slate-600">Click marker/card to open detail</div>
-                      </div>
-                    </Popup>
-                  </CircleMarker>
-                );
-              })}
+              <NodeMarkers
+                nodes={nodes}
+                routeIndex={routeIndex}
+                selectedId={selectedId}
+                setSelectedId={setSelectedId}
+                setHoveredId={setHoveredId}
+                onSelectPatient={onSelectPatient}
+              />
 
               {route.map((n, idx) => (
                 <Marker
@@ -355,27 +488,31 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className="flex flex-col min-h-0 rounded-xl border border-slate-200 bg-white p-3">
           <div className="text-[0.68rem] uppercase tracking-[0.16em] text-slate-500 mb-1">
             Suggested Route
           </div>
           <div className="text-sm font-semibold text-slate-900 mb-1">
             Visit Order(high risk first)
           </div>
-          <div className="text-[0.7rem] text-slate-500 mb-2">
+          <div className="text-[0.7rem] text-slate-500 mb-2 shrink-0">
             {route.length} stops · approx {distanceKm.toFixed(1)} km
           </div>
 
           {route.length === 0 ? (
-            <div className="text-sm text-slate-500">No patients available.</div>
+            <div className="text-sm text-slate-500 shrink-0">No patients available.</div>
           ) : (
-            <div className="space-y-2 max-h-[312px] overflow-y-auto pr-1">
+            <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1">
               {route.map((n, idx) => (
                 <button
                   key={n.id}
                   type="button"
-                  onClick={() => onSelectPatient?.(n.id)}
-                  className="w-full text-left rounded-lg border border-slate-200 px-2.5 py-2 hover:bg-slate-50 transition"
+                  onClick={() => setSelectedId(n.id)}
+                  className={`w-full text-left rounded-lg border px-2.5 py-2 transition ${
+                    selectedId === n.id
+                      ? 'border-pregnancy bg-pregnancy/5 ring-1 ring-pregnancy/30'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-xs font-semibold text-slate-900 truncate">
@@ -398,31 +535,6 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
               ))}
             </div>
           )}
-
-          {/* Fixed-height hover panel to avoid layout shift */}
-          <div className="mt-3 min-h-[148px] rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[0.72rem] text-slate-700">
-            {hovered ? (
-              <>
-                <div className="font-semibold text-slate-900">{hovered.name}</div>
-                <div>Tier {hovered.tier} · {tierLabel(hovered.tier)}</div>
-                <div>Location: {hovered.locationLabel}</div>
-                <div>
-                  Coords: {hovered.lat.toFixed(4)}, {hovered.lng.toFixed(4)}
-                </div>
-                <div>Gestational age: {hovered.weeks} weeks</div>
-                <div>Missed check-ins: {hovered.misses}</div>
-                <div>Updated: {timeAgo(hovered.updatedAt)}</div>
-              </>
-            ) : (
-              <div className="flex flex-col gap-2 h-full min-h-[132px] justify-center text-slate-400">
-                <div className="h-3 w-3/4 rounded bg-slate-200/80 animate-pulse" />
-                <div className="h-3 w-2/3 rounded bg-slate-200/60 animate-pulse" />
-                <div className="h-3 w-4/5 rounded bg-slate-200/50 animate-pulse" />
-                <div className="h-3 w-1/2 rounded bg-slate-200/40 animate-pulse" />
-                <div className="text-[0.65rem] text-slate-400 mt-1">Hover a point on the map</div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
