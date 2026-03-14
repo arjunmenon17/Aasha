@@ -354,7 +354,7 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
           <div className="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-slate-500">
             CHW Route Planner
           </div>
-          <div className="text-sm font-semibold text-slate-900">
+          <div className="text-base font-bold text-slate-900">
             Live map with risk-prioritized route
           </div>
         </div>
@@ -442,7 +442,7 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
           <div className="text-[0.68rem] uppercase tracking-[0.16em] text-slate-500 mb-1">
             Suggested Route
           </div>
-          <div className="text-sm font-semibold text-slate-900 mb-1">
+          <div className="text-base font-bold text-slate-900 mb-1">
             Visit order (risk + distance)
           </div>
           <div className="text-[0.7rem] text-slate-500 mb-2 shrink-0">

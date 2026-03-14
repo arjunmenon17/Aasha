@@ -59,7 +59,7 @@ export function App() {
   return (
     <div className="min-h-screen relative overflow-hidden app-shell-bg flex flex-col">
       <FloralBackdrop />
-      <header className="flex items-center justify-between w-full border-b border-slate-200/80 bg-white/85 backdrop-blur-sm px-4 sm:px-6 py-3 shadow-sm relative z-10 shrink-0">
+      <header className="flex items-center justify-between w-full rounded-t-xl border-b border-slate-200/80 bg-white/90 backdrop-blur-sm pl-6 sm:pl-8 pr-4 sm:pr-6 py-3 shadow-sm relative z-10 shrink-0">
         <div className="flex items-center gap-3">
           <img
             src="/aasha.png"
@@ -67,7 +67,7 @@ export function App() {
             className="h-10 w-auto object-contain drop-shadow-sm"
           />
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-[0.16em] uppercase text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-[0.16em] uppercase text-slate-900">
               AASHA
             </h1>
             <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
@@ -76,19 +76,23 @@ export function App() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="flex items-center gap-2 justify-end">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  connected ? 'bg-green-500 pulse-ring' : 'bg-red-500'
+          <div className="flex items-center gap-3">
+            <div
+              className={`inline-flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium ${
+                connected
+                  ? 'bg-emerald-50/80 text-emerald-700'
+                  : 'bg-red-50/80 text-red-700'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  connected ? 'bg-emerald-500 pulse-ring' : 'bg-red-500'
                 }`}
               />
-              <span className="text-xs text-slate-500">
-                {connected ? 'Live' : 'Disconnected'}
-              </span>
+              <span>{connected ? 'Live' : 'Disconnected'}</span>
             </div>
             {lastRefresh && (
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-slate-400 hidden sm:block">
                 Updated {lastRefresh.toLocaleTimeString()}
               </div>
             )}
