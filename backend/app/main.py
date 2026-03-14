@@ -24,14 +24,18 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Aasha...")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables created")
+    if engine is not None:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables created")
+    else:
+        logger.info("Running in Supabase-only mode (no local SQLAlchemy DB engine)")
     start_scheduler()
     yield
     # Shutdown
     stop_scheduler()
-    await engine.dispose()
+    if engine is not None:
+        await engine.dispose()
     logger.info("Aasha stopped")
 
 

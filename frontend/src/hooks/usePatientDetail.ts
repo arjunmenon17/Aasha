@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { patientsApi } from '@/api';
 import type { PatientDetail } from '@/types';
-import { MOCK_PATIENT_DETAIL_BY_ID } from '@/mock/patients';
 
 export function usePatientDetail(patientId: string | null) {
   const [detail, setDetail] = useState<PatientDetail | null>(null);
@@ -21,14 +20,7 @@ export function usePatientDetail(patientId: string | null) {
       .get(patientId)
       .then(setDetail)
       .catch((e: Error) => {
-        // Fallback to mock detail if backend is unavailable.
-        const mock = MOCK_PATIENT_DETAIL_BY_ID[patientId];
-        if (mock) {
-          setDetail(mock);
-          setError(null);
-        } else {
-          setError(e.message);
-        }
+        setError(e.message);
       })
       .finally(() => setLoading(false));
   }, [patientId]);

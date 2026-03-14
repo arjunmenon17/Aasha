@@ -1,7 +1,10 @@
-import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
+# Load environment from project root first, then local cwd fallback.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(PROJECT_ROOT / ".env")
 load_dotenv()
 
 
@@ -10,6 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = ""
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
+    SUPABASE_PUBLISHABLE_KEY: str = ""
 
     # Moorcheh AI
     MOORCHEH_API_KEY: str = ""
