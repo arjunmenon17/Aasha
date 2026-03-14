@@ -9,7 +9,6 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
-from app.api.demo import demo_router
 from app.core.database import engine, Base
 from app.services.scheduler_service import start_scheduler, stop_scheduler
 
@@ -55,7 +54,6 @@ app.add_middleware(
 )
 
 app.include_router(router)
-app.include_router(demo_router)
 
 
 @app.get("/")

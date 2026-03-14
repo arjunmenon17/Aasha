@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Login, Dashboard, PatientDetailPage } from '@/pages';
 import { usePatients } from '@/hooks';
-import { demoApi } from '@/api';
 import { FloralBackdrop } from '@/components/ui';
 
 export function App() {
@@ -56,12 +55,6 @@ export function App() {
       </div>
     );
   }
-
-  const handleSeedDemo = () => {
-    if (confirm('Seed demo data? This will add test patients.')) {
-      demoApi.seed().then(refetch);
-    }
-  };
 
   return (
     <div className="min-h-screen relative overflow-hidden app-shell-bg">
@@ -123,15 +116,6 @@ export function App() {
         ) : (
           <Dashboard data={data} onSelectPatient={setSelectedPatient} />
         )}
-
-        <div className="fixed bottom-4 right-4">
-          <button
-            onClick={handleSeedDemo}
-            className="bg-pregnancy-dark text-white px-3 py-2 rounded-lg text-xs hover:bg-pregnancy shadow-md"
-          >
-            Seed Demo Data
-          </button>
-        </div>
       </div>
     </div>
   );
