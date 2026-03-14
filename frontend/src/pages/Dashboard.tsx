@@ -211,7 +211,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
       </div>
 
       {/* Full-width 3D severity graph */}
-      <Severity3DGraph patients={data.patients} />
+      <Severity3DGraph patients={data.patients} onSelectPatient={onSelectPatient} />
     </div>
   );
 }
