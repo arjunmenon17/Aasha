@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { patientsApi } from '@/api';
 import type { PatientsResponse } from '@/types';
+import { MOCK_PATIENTS_RESPONSE } from '@/mock/patients';
 
 export function usePatients(pollIntervalMs = 30_000) {
   const [data, setData] = useState<PatientsResponse | null>(null);
@@ -18,10 +19,16 @@ export function usePatients(pollIntervalMs = 30_000) {
         setError(null);
       })
       .catch((e: Error) => {
+        // Fallback to mock data so the UI remains usable when the
+        // real backend / Supabase is unavailable.
+        if (!data) {
+          setData(MOCK_PATIENTS_RESPONSE);
+          setLastRefresh(new Date());
+        }
         setConnected(false);
         setError(e.message);
       });
-  }, []);
+  }, [data]);
 
   useEffect(() => {
     fetchPatients();

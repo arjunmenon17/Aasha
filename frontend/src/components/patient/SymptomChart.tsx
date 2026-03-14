@@ -23,26 +23,27 @@ export function SymptomChart({ chartData }: SymptomChartProps) {
   if (chartData.length === 0) return null;
 
   return (
-    <div className="bg-slate-800 rounded-xl p-4 mb-4">
-      <h3 className="font-bold text-lg mb-3 text-slate-100">Symptom Timeline</h3>
-      <ResponsiveContainer width="100%" height={200}>
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <h3 className="font-semibold text-base text-slate-900 mb-4">Symptom timeline</h3>
+      <ResponsiveContainer width="100%" height={220}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="name" stroke="#94A3B8" fontSize={12} />
-          <YAxis domain={[0, 3]} stroke="#94A3B8" fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tick={{ fill: '#475569' }} />
+          <YAxis domain={[0, 3]} stroke="#64748b" fontSize={12} tick={{ fill: '#475569' }} />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#1E293B',
-              border: 'none',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e2e8f0',
               borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
             }}
-            labelStyle={{ color: '#F1F5F9' }}
+            labelStyle={{ color: '#0f172a' }}
           />
           <Legend />
           <Line
             type="monotone"
             dataKey="wellbeing"
-            stroke="#3B82F6"
+            stroke="#B85050"
             strokeWidth={2}
             name="Wellbeing"
           />
