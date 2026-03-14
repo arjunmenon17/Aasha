@@ -397,7 +397,10 @@ async def persist_assessment(
 
     # Update patient risk tier
     patient.current_risk_tier = risk_tier
-    flag_modified(patient, "baseline")
+    try:
+        flag_modified(patient, "baseline")
+    except Exception:
+        pass
 
     # Fire escalation if tier >= 2
     if risk_tier >= 2:

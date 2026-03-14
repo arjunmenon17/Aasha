@@ -10,9 +10,8 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # Supabase
-    DATABASE_URL: str = ""
+    DATABASE_URL: str = ""   # optional: direct PostgreSQL; if blank, uses Supabase REST
     SUPABASE_URL: str = ""
-    SUPABASE_ANON_KEY: str = ""
     SUPABASE_PUBLISHABLE_KEY: str = ""
 
     # Moorcheh AI

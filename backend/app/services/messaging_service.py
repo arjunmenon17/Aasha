@@ -142,8 +142,11 @@ async def process_inbound_message(patient: Patient, body: str, db: AsyncSession)
             await complete_checkin(patient, conversation, db)
 
     # Mark conversation data as modified for SQLAlchemy JSON tracking
-    from sqlalchemy.orm.attributes import flag_modified
-    flag_modified(conversation, "conversation_data")
+    try:
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(conversation, "conversation_data")
+    except Exception:
+        pass
 
 
 async def complete_checkin(patient: Patient, conversation: ConversationState, db: AsyncSession):
@@ -236,5 +239,8 @@ async def update_patient_baseline(patient: Patient, responses: dict, db: AsyncSe
 
     patient.baseline = baseline
 
-    from sqlalchemy.orm.attributes import flag_modified
-    flag_modified(patient, "baseline")
+    try:
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(patient, "baseline")
+    except Exception:
+        pass

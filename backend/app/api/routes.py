@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -40,16 +40,23 @@ async def enroll_patient(patient_data: PatientCreate, db: AsyncSession = Depends
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Phone number already enrolled")
 
+    now = datetime.now(timezone.utc)
     patient = Patient(
         name=patient_data.name,
         phone_number=patient_data.phone_number,
         gestational_age_at_enrollment=patient_data.gestational_age_at_enrollment,
         estimated_due_date=patient_data.estimated_due_date,
-        status=patient_data.status,
+        status=patient_data.status or "pregnant",
         risk_factors=patient_data.risk_factors,
         chw_id=patient_data.chw_id,
         health_zone_id=patient_data.health_zone_id,
         facility_id=patient_data.facility_id,
+        enrollment_date=now,
+        current_risk_tier=0,
+        check_in_frequency="standard",
+        consecutive_misses=0,
+        created_at=now,
+        updated_at=now,
         baseline={
             "headache_history": [],
             "headache_frequency": 0,
