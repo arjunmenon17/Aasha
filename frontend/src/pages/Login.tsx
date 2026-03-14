@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MouseEvent } from 'react';
 import { Flower } from '@/components/login/Flower';
 
 interface LoginProps {
@@ -15,6 +15,36 @@ const ORB_DURATION_MS = 28000;
 
 function randomInRange(min: number, max: number) {
   return min + Math.random() * (max - min);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function repelPoint(
+  px: number,
+  py: number,
+  cx: number,
+  cy: number,
+  radius: number,
+  strength: number
+) {
+  const dx = px - cx;
+  const dy = py - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist >= radius || dist === 0) {
+    return { left: px, top: py };
+  }
+
+  const influence = (radius - dist) / radius;
+  const push = influence * strength;
+  const ux = dx / dist;
+  const uy = dy / dist;
+
+  return {
+    left: clamp(px + ux * push, 2, 98),
+    top: clamp(py + uy * push, 2, 98),
+  };
 }
 
 // Avoid flowers overlapping the central content block
@@ -43,9 +73,11 @@ function randomPositionAvoidingCenter() {
 
 export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
+  const [cursor, setCursor] = useState({ x: 50, y: 50 });
+  const [hovering, setHovering] = useState(false);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const ORB_COLORS = ['#fecaca', '#fee2e2', '#ffc9d0', '#fbcfe8', '#fce7f3'];
+  const ORB_COLORS = ['#fda4af', '#fb7185', '#f9a8d4', '#fecdd3', '#fbcfe8'];
   const [orbs, setOrbs] = useState<
     { id: number; left: number; top: number; size: number; color: string; delay: number }[]
   >(() => {
@@ -99,33 +131,77 @@ export function Login({ onEnter }: LoginProps) {
     return () => clearInterval(interval);
   }, []);
 
+  const contentShiftX = (cursor.x - 50) * -0.14;
+  const contentShiftY = (cursor.y - 50) * -0.1;
+  const orbsShiftX = (cursor.x - 50) * 0.1;
+  const orbsShiftY = (cursor.y - 50) * 0.08;
+  const repelRadius = 11;
+  const repelStrength = 8;
+
+  const handleMouseMove = (ev: MouseEvent<HTMLDivElement>) => {
+    const rect = ev.currentTarget.getBoundingClientRect();
+    const x = ((ev.clientX - rect.left) / rect.width) * 100;
+    const y = ((ev.clientY - rect.top) / rect.height) * 100;
+    setCursor({ x, y });
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-white">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-white"
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+    >
       {/* Animated orbs + flowers */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {orbs.map((orb) => (
-          <div
-            key={orb.id}
-            className="login-orb absolute rounded-full blur-3xl"
-            style={{
-              left: `${orb.left}%`,
-              top: `${orb.top}%`,
-              width: orb.size,
-              height: orb.size,
-              backgroundColor: orb.color,
-              animationDelay: `${orb.delay}ms`,
-            }}
-          />
-        ))}
-        {flowers.map((f) => (
-          <Flower key={f.id} left={f.left} top={f.top} size={f.size} />
-        ))}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        style={{
+          transform: `translate3d(${orbsShiftX}px, ${orbsShiftY}px, 0)`,
+        }}
+      >
+        {orbs.map((orb) => {
+          const p = hovering
+            ? repelPoint(orb.left, orb.top, cursor.x, cursor.y, repelRadius, repelStrength)
+            : { left: orb.left, top: orb.top };
+          return (
+            <div
+              key={orb.id}
+              className="login-orb absolute rounded-full blur-3xl"
+              style={{
+                left: `${p.left}%`,
+                top: `${p.top}%`,
+                width: orb.size,
+                height: orb.size,
+                backgroundColor: orb.color,
+                animationDelay: `${orb.delay}ms`,
+                transition: 'left 90ms ease-out, top 90ms ease-out',
+              }}
+            />
+          );
+        })}
+        {flowers.map((f) => {
+          const p = hovering
+            ? repelPoint(f.left, f.top, cursor.x, cursor.y, repelRadius, repelStrength + 4)
+            : { left: f.left, top: f.top };
+          return <Flower key={f.id} left={p.left} top={p.top} size={f.size} />;
+        })}
       </div>
+
+      <div
+        className="absolute inset-0 pointer-events-none z-[2]"
+        style={{
+          background: `radial-gradient(480px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0) 60%)`,
+        }}
+      />
 
       {/* Content on top */}
       <div
         className="relative z-10 flex flex-col items-center text-center"
-        style={{ color: TEXT_COLOR }}
+        style={{
+          color: TEXT_COLOR,
+          transform: `translate3d(${contentShiftX}px, ${contentShiftY}px, 0)`,
+          transition: 'transform 80ms ease-out',
+        }}
       >
         <img
           src="/aasha.png"
@@ -152,6 +228,7 @@ export function Login({ onEnter }: LoginProps) {
           style={{
             fontFamily: 'Outfit, system-ui, sans-serif',
             color: BUTTON_TEXT_COLOR,
+            transform: `translate3d(${(cursor.x - 50) * -0.05}px, ${(cursor.y - 50) * -0.04}px, 0)`,
           }}
         >
           Login
