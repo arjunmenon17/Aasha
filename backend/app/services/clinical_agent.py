@@ -114,7 +114,7 @@ async def run_clinical_assessment(
         # Step 6: Persist and act on assessment
         await persist_assessment(patient, symptom_log, assessment_data, query, protocol_chunks, db)
         log += f"Assessment persisted\n"
-        print(log, file="log.txt")
+        print(log)
     except Exception as e:
         logger.error(f"Clinical assessment failed for patient {patient.id}: {e}")
         # F3.8: Fall back to conservative Tier 2
