@@ -10,30 +10,30 @@ interface PatientListProps {
 
 export function PatientList({ patients, onSelect }: PatientListProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {patients.map((p) => {
         const weeks = gestWeeks(p.gestational_age_at_enrollment, p.enrollment_date);
         return (
           <div
             key={p.id}
             onClick={() => onSelect(p.id)}
-            className="bg-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-between"
+            className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-pregnancy-dark/60 hover:shadow-sm transition flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <TierBadge tier={p.current_risk_tier} />
               <div>
-                <div className="font-semibold text-slate-100">{p.name}</div>
-                <div className="text-sm text-gray-400">
+                <div className="font-medium text-slate-900">{p.name}</div>
+                <div className="text-sm text-slate-500">
                   {p.status === 'postpartum' ? 'Postpartum' : `${weeks} weeks`}
                   {(p.consecutive_misses ?? 0) > 0 && (
-                    <span className="text-yellow-500 ml-2">
+                    <span className="text-yellow-600 ml-2">
                       ({p.consecutive_misses} missed)
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="text-sm text-gray-500">{timeAgo(p.updated_at)}</div>
+            <div className="text-xs text-slate-400">{timeAgo(p.updated_at)}</div>
           </div>
         );
       })}
