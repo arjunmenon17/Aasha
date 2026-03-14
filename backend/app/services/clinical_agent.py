@@ -95,21 +95,26 @@ async def run_clinical_assessment(
 ):
     """Run the full clinical reasoning pipeline."""
     try:
+        log = ""
         # Step 1: Assemble patient context
         context = await assemble_patient_context(patient, symptom_log, db)
+        log += f"Context: {context}\n"
 
         # Step 2: Build semantic retrieval query
         query = build_retrieval_query(symptom_log.responses, patient)
+        log += f"Query: {query}\n"
 
         # Step 3: Retrieve clinical protocols via Moorcheh
         protocol_chunks = await retrieve_clinical_context(query)
+        log += f"Protocol chunks: {protocol_chunks}\n"
 
         # Step 4 & 5: Build prompt and call Claude
         assessment_data = await call_claude_clinical(context, protocol_chunks, query)
-
+        log += f"Assessment data: {assessment_data}\n"
         # Step 6: Persist and act on assessment
         await persist_assessment(patient, symptom_log, assessment_data, query, protocol_chunks, db)
-
+        log += f"Assessment persisted\n"
+        print(log, file="log.txt")
     except Exception as e:
         logger.error(f"Clinical assessment failed for patient {patient.id}: {e}")
         # F3.8: Fall back to conservative Tier 2
