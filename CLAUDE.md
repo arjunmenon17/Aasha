@@ -107,7 +107,7 @@ Five components. Components 1, 2, 4, 5 are intentionally simple. **All complexit
                               |
                               v
               [Component 4: Escalation Engine]
-                  Simultaneous SMS: patient + CHW + transport + facility
+                  Simultaneous SMS: patient + CHW + facility
                   APScheduler follow-up every 10 min until resolved
 
 [Component 5: CHW Dashboard (React)] — polls /api/patients every 30s
@@ -122,11 +122,10 @@ Five components. Components 1, 2, 4, 5 are intentionally simple. **All complexit
 
 | Table | Purpose | Key Fields |
 |-------|---------|-----------|
-| `patients` | Core patient record + baseline | `id`, `name`, `phone_number`, `gestational_age_at_enrollment`, `status`, `current_risk_tier`, `baseline` (JSONB), `risk_factors` (JSONB) |
-| `community_health_workers` | CHW contact info | `id`, `name`, `phone_number`, `zone_id`, `skills` (JSONB) |
-| `health_zones` | Geographic zones | `id`, `name`, `region` |
+| `patients` | Core patient record + baseline | `id`, `name`, `phone_number`, `gestational_age_at_enrollment`, `status`, `current_risk_tier`, `health_zone_id`, `baseline` (JSONB), `risk_factors` (JSONB) |
+| `community_health_workers` | CHW contact info | `id`, `name`, `phone_number`, `zone_id` |
+| `health_zones` | Geographic zones (region = area code, e.g. `L6Y`) | `id`, `name`, `region` |
 | `health_facilities` | Referral facilities | `id`, `name`, `facility_level`, `phone_number`, `capabilities` (JSONB) |
-| `transport_resources` | Emergency transport contacts | `id`, `zone_id`, `contact_name`, `phone_number`, `resource_type`, `reliability_score` |
 | `check_in_schedules` | Scheduled/completed check-ins | `id`, `patient_id`, `scheduled_for`, `sent_at`, `completed_at`, `missed` |
 | `conversation_state` | Active SMS conversation tracking | `id`, `patient_id`, `check_in_id`, `current_node`, `conversation_data` (JSONB), `expires_at` |
 | `symptom_logs` | Parsed check-in symptom data | `id`, `patient_id`, `check_in_id`, `gestational_age_days`, `responses` (JSONB), `raw_responses` (JSONB) |
@@ -376,12 +375,11 @@ Filters only work if metadata was included when uploading documents. Use consist
 
 - **Tier 1:** SMS to CHW — patient name, gestational age, primary concern (awareness only)
 - **Tier 2:** SMS to CHW with patient details + phone; set `check_in_frequency` to daily
-- **Tier 3:** Simultaneous SMS via `asyncio.gather` to patient + CHW + transport contact + receiving facility; start APScheduler follow-up loop
+- **Tier 3:** Simultaneous SMS via `asyncio.gather` to patient + CHW + receiving facility; start APScheduler follow-up loop (transport is omitted in this app)
 
 ### Follow-up Loop (APScheduler, every 10 min)
 
 - CHW not acknowledged after 20 min → try secondary CHW
-- Transport not confirmed after 20 min → try next best transport
 - Patient not confirmed but CHW acknowledged → ask CHW to verify
 - Stops after 12 attempts (2 hours) or upon resolution
 
@@ -392,8 +390,6 @@ Filters only work if metadata was included when uploading documents. Use consist
 | `RESPONDING` | CHW | Set `chw_acknowledged_at` |
 | `UNAVAILABLE` | CHW | Try secondary CHW |
 | `RESOLVED` | CHW | Set `resolved_at`, reset patient tier |
-| `YES` | Transport | Set `transport_confirmed_at`, send confirmation SMS to patient |
-| `NO` | Transport | Try next transport resource |
 
 ---
 

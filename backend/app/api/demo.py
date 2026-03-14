@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.models import (
     HealthZone, CommunityHealthWorker, HealthFacility,
-    TransportResource, Patient, ClinicalAssessment, SymptomLog,
+    Patient, ClinicalAssessment, SymptomLog,
     EscalationEvent,
 )
 
@@ -22,11 +22,11 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
     """Seed the database with realistic demo data."""
     now = datetime.utcnow()
 
-    # --- Health Zone ---
+    # --- Health Zone (region = area code, e.g. L6Y) ---
     zone = HealthZone(
         id=uuid.uuid4(),
         name="Kibera Zone A",
-        region="Nairobi County",
+        region="L6Y",
     )
     db.add(zone)
     await db.flush()
@@ -37,14 +37,12 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
         name="Grace Wanjiku",
         phone_number="+254700111222",
         zone_id=zone.id,
-        skills={"maternal_health": True, "neonatal": True},
     )
     chw2 = CommunityHealthWorker(
         id=uuid.uuid4(),
         name="Mary Akinyi",
         phone_number="+254700111333",
         zone_id=zone.id,
-        skills={"maternal_health": True},
     )
     db.add_all([chw, chw2])
     await db.flush()
@@ -69,26 +67,6 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
     db.add_all([facility, clinic])
     await db.flush()
 
-    # --- Transport ---
-    transport = TransportResource(
-        id=uuid.uuid4(),
-        zone_id=zone.id,
-        contact_name="James Ochieng",
-        phone_number="+254700333444",
-        resource_type="ambulance",
-        reliability_score=0.95,
-    )
-    transport2 = TransportResource(
-        id=uuid.uuid4(),
-        zone_id=zone.id,
-        contact_name="Peter Kimani",
-        phone_number="+254700333555",
-        resource_type="motorcycle",
-        reliability_score=0.85,
-    )
-    db.add_all([transport, transport2])
-    await db.flush()
-
     # --- Patients ---
     patients_data = [
         {
@@ -98,6 +76,7 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             "status": "pregnant",
             "current_risk_tier": 3,
             "risk_factors": {"primigravida": True, "age_over_35": False},
+            "address": "12 Kisumu Road, Kibera",
             "baseline": {
                 "headache_history": [1, 1, 1, 2, 3],
                 "headache_frequency": 0.4,
@@ -115,6 +94,7 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             "status": "pregnant",
             "current_risk_tier": 2,
             "risk_factors": {"prior_preeclampsia": True, "chronic_hypertension": True},
+            "address": "5 Olympic Estate, Kibera",
             "baseline": {
                 "headache_history": [1, 2, 2, 1, 2, 2],
                 "headache_frequency": 0.67,
@@ -132,6 +112,7 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             "status": "pregnant",
             "current_risk_tier": 0,
             "risk_factors": {},
+            "address": "8 Gatina Village, Kibera",
             "baseline": {
                 "headache_history": [1, 1, 1],
                 "headache_frequency": 0.0,
@@ -149,6 +130,7 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             "status": "pregnant",
             "current_risk_tier": 1,
             "risk_factors": {"multiple_gestation": True},
+            "address": "3 Lindi Street, Kibera",
             "baseline": {
                 "headache_history": [1, 1, 1, 1, 2],
                 "headache_frequency": 0.2,
@@ -167,6 +149,7 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             "current_risk_tier": 0,
             "delivery_date": now - timedelta(days=3),
             "risk_factors": {},
+            "address": "15 Makina Road, Kibera",
             "baseline": {
                 "headache_history": [1, 1],
                 "headache_frequency": 0.0,
@@ -185,6 +168,7 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             "current_risk_tier": 2,
             "delivery_date": now - timedelta(days=5),
             "risk_factors": {"prior_pph": True},
+            "address": "7 Silanga Zone, Kibera",
             "baseline": {
                 "headache_history": [1, 1, 1, 1],
                 "headache_frequency": 0.0,
@@ -213,9 +197,10 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             baseline=pd["baseline"],
             risk_factors=pd["risk_factors"],
             chw_id=chw.id,
-            zone_id=zone.id,
+            health_zone_id=zone.id,
             facility_id=facility.id,
             delivery_date=pd.get("delivery_date"),
+            address=pd.get("address"),
         )
         db.add(p)
         created_patients.append(p)
@@ -324,7 +309,6 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
         primary_concern="Possible severe preeclampsia — 4 concurrent danger signs",
         patient_notified_at=now - timedelta(hours=1),
         chw_notified_at=now - timedelta(hours=1),
-        transport_notified_at=now - timedelta(hours=1),
         facility_notified_at=now - timedelta(hours=1),
         chw_acknowledged_at=now - timedelta(minutes=45),
         follow_up_count=2,
@@ -339,7 +323,6 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
         "zone": zone.name,
         "chws": 2,
         "facilities": 2,
-        "transport": 2,
         "patients": len(created_patients),
         "assessments": 2,
         "escalations": 1,

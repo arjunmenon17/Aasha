@@ -48,7 +48,7 @@ async def enroll_patient(patient_data: PatientCreate, db: AsyncSession = Depends
         status=patient_data.status,
         risk_factors=patient_data.risk_factors,
         chw_id=patient_data.chw_id,
-        zone_id=patient_data.zone_id,
+        health_zone_id=patient_data.health_zone_id,
         facility_id=patient_data.facility_id,
         baseline={
             "headache_history": [],
@@ -235,7 +235,7 @@ async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
     db.add(sms_entry)
 
-    # Check if this is an escalation reply from CHW/transport
+    # Check if this is an escalation reply from CHW
     from app.services.escalation_service import handle_escalation_reply
     escalation_handled = await handle_escalation_reply(from_number, body, db)
 

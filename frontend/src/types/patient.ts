@@ -51,6 +51,11 @@ export interface Patient {
   risk_factors?: Record<string, boolean>;
   consecutive_misses?: number;
   updated_at: string;
+  /** Patient's health zone (references health_zones.id) */
+  health_zone_id?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface PatientDetail extends Patient {
