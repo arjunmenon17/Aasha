@@ -5,7 +5,7 @@ Handles inbound SMS responses, walks through question tree,
 and triggers clinical reasoning on check-in completion.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,7 +40,7 @@ async def start_checkin(patient: Patient, db: AsyncSession, check_in_id=None):
         current_node="start",
         conversation_data={},
         is_active=True,
-        expires_at=datetime.utcnow() + timedelta(hours=48),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
     )
     db.add(conversation)
     await db.flush()
@@ -56,7 +56,7 @@ async def start_checkin(patient: Patient, db: AsyncSession, check_in_id=None):
         )
         check_in = ci_result.scalar_one_or_none()
         if check_in:
-            check_in.sent_at = datetime.utcnow()
+            check_in.sent_at = datetime.now(timezone.utc)
 
     logger.info(f"Check-in started for patient {patient.name} ({patient.id})")
 
@@ -154,7 +154,7 @@ async def complete_checkin(patient: Patient, conversation: ConversationState, db
     conversation.is_active = False
 
     # Calculate gestational age
-    days_since_enrollment = (datetime.utcnow() - patient.enrollment_date).days
+    days_since_enrollment = (datetime.now(timezone.utc) - patient.enrollment_date).days
     gestational_age_days = patient.gestational_age_at_enrollment + days_since_enrollment
 
     # Create symptom log
@@ -179,7 +179,7 @@ async def complete_checkin(patient: Patient, conversation: ConversationState, db
         )
         check_in = ci_result.scalar_one_or_none()
         if check_in:
-            check_in.completed_at = datetime.utcnow()
+            check_in.completed_at = datetime.now(timezone.utc)
             check_in.missed = False
 
     # Reset consecutive misses

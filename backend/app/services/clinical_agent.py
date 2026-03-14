@@ -11,7 +11,7 @@ Pipeline:
 """
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import anthropic
 from sqlalchemy import select, desc
@@ -141,14 +141,14 @@ async def assemble_patient_context(
     prior_escalations = esc_result.scalars().all()
 
     # Calculate current gestational age
-    days_since_enrollment = (datetime.utcnow() - patient.enrollment_date).days
+    days_since_enrollment = (datetime.now(timezone.utc) - patient.enrollment_date).days
     gestational_age_days = patient.gestational_age_at_enrollment + days_since_enrollment
     gestational_weeks = gestational_age_days // 7
 
     # Determine postpartum day if applicable
     postpartum_day = None
     if patient.status == "postpartum" and patient.delivery_date:
-        postpartum_day = (datetime.utcnow() - patient.delivery_date).days
+        postpartum_day = (datetime.now(timezone.utc) - patient.delivery_date).days
 
     return {
         "patient_summary": {
@@ -197,7 +197,7 @@ def build_retrieval_query(responses: dict, patient: Patient) -> str:
                 terms.append(nl)
 
     # Add pregnancy context
-    days_since_enrollment = (datetime.utcnow() - patient.enrollment_date).days
+    days_since_enrollment = (datetime.now(timezone.utc) - patient.enrollment_date).days
     ga_days = patient.gestational_age_at_enrollment + days_since_enrollment
     ga_weeks = ga_days // 7
 
