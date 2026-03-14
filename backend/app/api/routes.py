@@ -17,6 +17,11 @@ from app.schemas.schemas import (
     TierSummary, AssessmentResponse, SymptomLogResponse, EscalationResponse,
     EnrollResponse
 )
+from app.services.supabase_data_service import (
+    is_configured as supabase_configured,
+    list_patients as supabase_list_patients,
+    get_patient_detail as supabase_get_patient_detail,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,12 +86,16 @@ async def enroll_patient(patient_data: PatientCreate, db: AsyncSession = Depends
 
 
 @router.get("/api/patients", response_model=DashboardResponse)
-async def list_patients(db: AsyncSession = Depends(get_db)):
+async def list_patients():
     """List all patients sorted by risk tier (desc) for dashboard."""
-    result = await db.execute(
-        select(Patient).order_by(desc(Patient.current_risk_tier), Patient.gestational_age_at_enrollment)
-    )
-    patients = result.scalars().all()
+    if not supabase_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase REST is not configured (need SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY).",
+        )
+
+    raw_patients = await supabase_list_patients()
+    patients = [PatientResponse.model_validate(p) for p in raw_patients]
 
     # Build tier summary
     summary = TierSummary(total=len(patients))
@@ -102,50 +111,36 @@ async def list_patients(db: AsyncSession = Depends(get_db)):
 
     return DashboardResponse(
         summary=summary,
-        patients=[PatientResponse.model_validate(p) for p in patients]
+        patients=patients
     )
 
 
 @router.get("/api/patients/{patient_id}", response_model=PatientDetail)
-async def get_patient(patient_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_patient(patient_id: UUID):
     """Get detailed patient info including latest assessment and symptom logs."""
-    result = await db.execute(select(Patient).where(Patient.id == patient_id))
-    patient = result.scalar_one_or_none()
-    if not patient:
+    if not supabase_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase REST is not configured (need SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY).",
+        )
+
+    data = await supabase_get_patient_detail(patient_id)
+    if not data:
         raise HTTPException(status_code=404, detail="Patient not found")
-
-    # Latest assessment
-    assess_result = await db.execute(
-        select(ClinicalAssessment)
-        .where(ClinicalAssessment.patient_id == patient_id)
-        .order_by(desc(ClinicalAssessment.created_at))
-        .limit(1)
+    detail = PatientDetail.model_validate(data["patient"])
+    detail.latest_assessment = (
+        AssessmentResponse.model_validate(data["latest_assessment"])
+        if data["latest_assessment"]
+        else None
     )
-    latest_assessment = assess_result.scalar_one_or_none()
-
-    # Recent symptom logs
-    logs_result = await db.execute(
-        select(SymptomLog)
-        .where(SymptomLog.patient_id == patient_id)
-        .order_by(desc(SymptomLog.created_at))
-        .limit(5)
+    detail.recent_symptom_logs = [
+        SymptomLogResponse.model_validate(l) for l in data["recent_logs"]
+    ]
+    detail.active_escalation = (
+        EscalationResponse.model_validate(data["active_escalation"])
+        if data["active_escalation"]
+        else None
     )
-    recent_logs = logs_result.scalars().all()
-
-    # Active escalation
-    esc_result = await db.execute(
-        select(EscalationEvent)
-        .where(EscalationEvent.patient_id == patient_id, EscalationEvent.status == "active")
-        .order_by(desc(EscalationEvent.created_at))
-        .limit(1)
-    )
-    active_escalation = esc_result.scalar_one_or_none()
-
-    detail = PatientDetail.model_validate(patient)
-    detail.latest_assessment = AssessmentResponse.model_validate(latest_assessment) if latest_assessment else None
-    detail.recent_symptom_logs = [SymptomLogResponse.model_validate(l) for l in recent_logs]
-    detail.active_escalation = EscalationResponse.model_validate(active_escalation) if active_escalation else None
-
     return detail
 
 
