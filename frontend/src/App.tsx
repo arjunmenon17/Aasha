@@ -6,10 +6,9 @@ import { demoApi } from '@/api';
 export function App() {
   const [entered, setEntered] = useState(() => {
     if (typeof window === 'undefined') return false;
-    // Treat /dashboard as an entered state, otherwise fall back to localStorage flag
+    // First load should default to /login. Only /dashboard opens dashboard directly.
     if (window.location.pathname === '/dashboard') return true;
-    if (window.location.pathname === '/login') return false;
-    return window.localStorage.getItem('aasha_entered') === '1';
+    return false;
   });
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const { data, lastRefresh, connected, error, refetch } = usePatients();
@@ -17,7 +16,6 @@ export function App() {
   const handleEnter = () => {
     setEntered(true);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('aasha_entered', '1');
       window.history.pushState(null, '', '/dashboard');
     }
   };
@@ -26,7 +24,6 @@ export function App() {
     setSelectedPatient(null);
     setEntered(false);
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('aasha_entered');
       window.history.pushState(null, '', '/login');
     }
   };
