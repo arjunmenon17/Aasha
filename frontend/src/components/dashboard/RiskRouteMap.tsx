@@ -372,19 +372,30 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
             </div>
           )}
 
-          {hovered ? (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[0.72rem] text-slate-700">
-              <div className="font-semibold text-slate-900">{hovered.name}</div>
-              <div>Tier {hovered.tier} · {tierLabel(hovered.tier)}</div>
-              <div>Location: {hovered.locationLabel}</div>
-              <div>
-                Coords: {hovered.lat.toFixed(4)}, {hovered.lng.toFixed(4)}
+          {/* Fixed-height hover panel to avoid layout shift */}
+          <div className="mt-3 min-h-[148px] rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[0.72rem] text-slate-700">
+            {hovered ? (
+              <>
+                <div className="font-semibold text-slate-900">{hovered.name}</div>
+                <div>Tier {hovered.tier} · {tierLabel(hovered.tier)}</div>
+                <div>Location: {hovered.locationLabel}</div>
+                <div>
+                  Coords: {hovered.lat.toFixed(4)}, {hovered.lng.toFixed(4)}
+                </div>
+                <div>Gestational age: {hovered.weeks} weeks</div>
+                <div>Missed check-ins: {hovered.misses}</div>
+                <div>Updated: {timeAgo(hovered.updatedAt)}</div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2 h-full min-h-[132px] justify-center text-slate-400">
+                <div className="h-3 w-3/4 rounded bg-slate-200/80 animate-pulse" />
+                <div className="h-3 w-2/3 rounded bg-slate-200/60 animate-pulse" />
+                <div className="h-3 w-4/5 rounded bg-slate-200/50 animate-pulse" />
+                <div className="h-3 w-1/2 rounded bg-slate-200/40 animate-pulse" />
+                <div className="text-[0.65rem] text-slate-400 mt-1">Hover a point on the map</div>
               </div>
-              <div>Gestational age: {hovered.weeks} weeks</div>
-              <div>Missed check-ins: {hovered.misses}</div>
-              <div>Updated: {timeAgo(hovered.updatedAt)}</div>
-            </div>
-          ) : null}
+            )}
+          </div>
         </div>
       </div>
 
