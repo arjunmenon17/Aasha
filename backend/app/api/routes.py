@@ -176,6 +176,17 @@ async def resolve_escalation(patient_id: UUID, db: AsyncSession = Depends(get_db
 
 # --- Twilio Webhook ---
 
+
+def _normalize_phone(phone: str) -> str:
+    """Normalize to E.164-ish for matching (e.g. +16477740844)."""
+    if not phone:
+        return phone
+    s = phone.strip()
+    if s and not s.startswith("+"):
+        s = "+" + s.lstrip("0")
+    return s
+
+
 @router.post("/api/webhooks/twilio")
 async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Handle inbound SMS from Twilio."""
@@ -195,9 +206,34 @@ async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         twilio_sid=twilio_sid,
     )
 
-    # Find patient by phone number
+    # Normalize phone for matching (Twilio sends E.164)
+    normalized = _normalize_phone(from_number)
+
+    # Find patient(s) by phone; if multiple, prefer the one with an active conversation
     result = await db.execute(select(Patient).where(Patient.phone_number == from_number))
-    patient = result.scalar_one_or_none()
+    patients = list(result.scalars().all())
+    if not patients:
+        # Try normalized in case DB has different format
+        result = await db.execute(select(Patient).where(Patient.phone_number == normalized))
+        patients = list(result.scalars().all())
+
+    patient = None
+    if len(patients) == 1:
+        patient = patients[0]
+    elif len(patients) > 1:
+        # Prefer patient who has an active conversation (reply belongs to that check-in)
+        for p in patients:
+            conv_result = await db.execute(
+                select(ConversationState).where(
+                    ConversationState.patient_id == p.id,
+                    ConversationState.is_active == True,
+                )
+            )
+            if conv_result.scalar_one_or_none():
+                patient = p
+                break
+        if patient is None:
+            patient = patients[0]
 
     if patient:
         sms_entry.patient_id = patient.id
@@ -209,13 +245,15 @@ async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     escalation_handled = await handle_escalation_reply(from_number, body, db)
 
     if not escalation_handled and patient:
-        # Process through conversation state machine
-        from app.services.messaging_service import process_inbound_message
-        await process_inbound_message(patient, body, db)
+        try:
+            from app.services.messaging_service import process_inbound_message
+            await process_inbound_message(patient, body, db)
+        except Exception as e:
+            logger.exception("Error processing inbound message: %s", e)
 
     await db.commit()
 
-    # Return empty TwiML to acknowledge
+    # Return empty TwiML so Twilio accepts the delivery
     return Response(
         content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         media_type="application/xml"

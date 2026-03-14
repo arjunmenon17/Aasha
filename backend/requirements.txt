@@ -10,3 +10,5 @@ python-dotenv
 pydantic
 pydantic-settings
 httpx
+aiosqlite
+python-multipart

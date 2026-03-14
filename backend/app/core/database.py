@@ -9,6 +9,9 @@ if not db_url or db_url.startswith("postgresql+asyncpg://postgres:password@"):
     db_url = "sqlite+aiosqlite:///./aasha.db"
     engine = create_async_engine(db_url, echo=False)
 else:
+    # Ensure we use asyncpg for PostgreSQL (not psycopg2)
+    if db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
     engine = create_async_engine(db_url, echo=False, pool_size=5, max_overflow=10)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
