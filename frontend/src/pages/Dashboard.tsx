@@ -153,8 +153,8 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
             </div>
           </div>
 
-          {/* Graph */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm graph-3d-shell">
+          {/* Current Load — 2D bar chart */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
@@ -188,9 +188,11 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                       borderRadius: 8,
                       border: '1px solid #e2e8f0',
                       fontSize: 12,
-                      boxShadow:
-                        '0 18px 45px rgba(15,23,42,0.18)',
+                      color: '#000',
+                      boxShadow: '0 18px 45px rgba(15,23,42,0.18)',
                     }}
+                    itemStyle={{ color: '#000' }}
+                    labelStyle={{ color: '#000' }}
                   />
                   <Bar
                     dataKey="count"
