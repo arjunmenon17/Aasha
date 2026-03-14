@@ -276,6 +276,11 @@ export function Login({ onEnter }: LoginProps) {
           >
             About Aasha
           </h2>
+          <img
+            src="/map.png"
+            alt="Aasha coverage map"
+            className="w-full max-w-md mx-auto rounded-xl border border-slate-200 shadow-md mb-8"
+          />
           <p
             className="text-slate-700 text-base sm:text-lg leading-relaxed mb-10"
             style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
