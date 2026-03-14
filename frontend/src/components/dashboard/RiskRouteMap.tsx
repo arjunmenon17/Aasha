@@ -196,31 +196,10 @@ function routeDistanceKm(route: MapNode[]): number {
   return total;
 }
 
-const OSRM_BASE = 'https://router.project-osrm.org';
-
-/** Fetch road/path-following walking route; returns [lat, lng][] or null on failure. */
-async function fetchWalkingRoute(waypoints: MapNode[]): Promise<LatLngTuple[] | null> {
-  if (waypoints.length < 2) return null;
-  const coords = waypoints.map((n) => `${n.lng},${n.lat}`).join(';');
-  const url = `${OSRM_BASE}/route/v1/foot/${coords}?overview=full&geometries=geojson`;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      routes?: Array<{ geometry?: { coordinates?: [number, number][] } }>;
-    };
-    const coordsList = data.routes?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordsList) || coordsList.length < 2) return null;
-    return coordsList.map(([lng, lat]) => [lat, lng] as LatLngTuple);
-  } catch {
-    return null;
-  }
-}
-
 function sequenceIcon(sequence: number): L.DivIcon {
   return L.divIcon({
     className: '',
-    html: `<div style="width:18px;height:18px;border-radius:9999px;background:#0f172a;color:#fff;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;line-height:1;">${sequence}</div>`,
+    html: `<div style="width:18px;height:18px;border-radius:9999px;background:transparent;color:#fff;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;line-height:1;text-shadow:0 0 1px #000, 0 0 2px #000;">${sequence}</div>`,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
@@ -351,8 +330,6 @@ function NodeMarkers({
 export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [roadRouteLine, setRoadRouteLine] = useState<LatLngTuple[] | null>(null);
-
   const nodesRaw = useMemo(() => toNodes(patients), [patients]);
   const nodes = useMemo(() => deconflictNodes(nodesRaw), [nodesRaw]);
   const route = useMemo(() => buildRoute(nodes), [nodes]);
@@ -363,23 +340,10 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
     return map;
   }, [route]);
 
-  const straightLine = useMemo(
+  const routeLine = useMemo(
     () => route.map((n) => [n.lat, n.lng] as LatLngTuple),
     [route],
   );
-  const routeLine = roadRouteLine && roadRouteLine.length > 1 ? roadRouteLine : straightLine;
-
-  const routeKeyRef = useRef<string>('');
-  useEffect(() => {
-    const routeKey = route.map((n) => n.id).join(',');
-    routeKeyRef.current = routeKey;
-    setRoadRouteLine(null);
-    if (route.length < 2) return;
-    fetchWalkingRoute(route).then((geometry) => {
-      if (routeKeyRef.current !== routeKey) return;
-      setRoadRouteLine(geometry);
-    });
-  }, [route]);
 
   const distanceKm = routeDistanceKm(route);
 
