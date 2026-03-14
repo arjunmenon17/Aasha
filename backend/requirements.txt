@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 sqlalchemy[asyncio]
 asyncpg
+aiosqlite
 apscheduler
 anthropic
 moorcheh-sdk

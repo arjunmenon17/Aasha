@@ -6,7 +6,7 @@ and inbound SMS reply routing for CHW/transport acknowledgments.
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
@@ -63,7 +63,7 @@ async def tier_1_escalation(
         logger.warning(f"No CHW found for patient {patient.name}")
         return
 
-    days_since = (datetime.utcnow() - patient.enrollment_date).days
+    days_since = (datetime.now(timezone.utc) - patient.enrollment_date).days
     ga_weeks = (patient.gestational_age_at_enrollment + days_since) // 7
 
     msg = (
@@ -72,7 +72,7 @@ async def tier_1_escalation(
         f"No action required — awareness only."
     )
     await send_sms(chw.phone_number, msg, patient_id=patient.id, db=db)
-    escalation.chw_notified_at = datetime.utcnow()
+    escalation.chw_notified_at = datetime.now(timezone.utc)
 
 
 async def tier_2_escalation(
@@ -87,7 +87,7 @@ async def tier_2_escalation(
         logger.warning(f"No CHW found for patient {patient.name}")
         return
 
-    days_since = (datetime.utcnow() - patient.enrollment_date).days
+    days_since = (datetime.now(timezone.utc) - patient.enrollment_date).days
     ga_weeks = (patient.gestational_age_at_enrollment + days_since) // 7
 
     msg = (
@@ -98,7 +98,7 @@ async def tier_2_escalation(
         f"Reply RESPONDING to acknowledge."
     )
     await send_sms(chw.phone_number, msg, patient_id=patient.id, db=db)
-    escalation.chw_notified_at = datetime.utcnow()
+    escalation.chw_notified_at = datetime.now(timezone.utc)
 
     # Set daily check-ins
     patient.check_in_frequency = "daily"
@@ -111,7 +111,7 @@ async def tier_3_escalation(
     db: AsyncSession,
 ):
     """Tier 3: Full emergency — simultaneous SMS to patient, CHW, transport, facility."""
-    days_since = (datetime.utcnow() - patient.enrollment_date).days
+    days_since = (datetime.now(timezone.utc) - patient.enrollment_date).days
     ga_weeks = (patient.gestational_age_at_enrollment + days_since) // 7
 
     # Get contacts
@@ -158,17 +158,17 @@ async def tier_3_escalation(
 
     # Send all simultaneously via asyncio.gather (F4.2)
     tasks = [send_sms(patient.phone_number, patient_msg, patient_id=patient.id, db=db)]
-    escalation.patient_notified_at = datetime.utcnow()
+    escalation.patient_notified_at = datetime.now(timezone.utc)
 
     if chw and chw_msg:
         tasks.append(send_sms(chw.phone_number, chw_msg, patient_id=patient.id, db=db))
-        escalation.chw_notified_at = datetime.utcnow()
+        escalation.chw_notified_at = datetime.now(timezone.utc)
     if transport and transport_msg:
         tasks.append(send_sms(transport.phone_number, transport_msg, patient_id=patient.id, db=db))
-        escalation.transport_notified_at = datetime.utcnow()
+        escalation.transport_notified_at = datetime.now(timezone.utc)
     if facility and facility_msg:
         tasks.append(send_sms(facility.phone_number, facility_msg, patient_id=patient.id, db=db))
-        escalation.facility_notified_at = datetime.utcnow()
+        escalation.facility_notified_at = datetime.now(timezone.utc)
 
     await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -272,26 +272,6 @@ async def handle_escalation_reply(from_number: str, body: str, db: AsyncSession)
     if chw:
         if body_upper == "RESPONDING":
             # Find active escalation for this CHW's patients
-            for patient in chw.patients if hasattr(chw, 'patients') else []:
-                esc_result = await db.execute(
-                    select(EscalationEvent).where(
-                        EscalationEvent.patient_id == patient.id,
-                        EscalationEvent.status == "active",
-                    )
-                )
-                esc = esc_result.scalar_one_or_none()
-                if esc:
-                    esc.chw_acknowledged_at = datetime.utcnow()
-                    await send_sms(chw.phone_number, "Thank you. Stay safe.", db=db)
-                    return True
-
-        elif body_upper == "UNAVAILABLE":
-            # Try secondary CHW — handled by follow-up loop
-            return True
-
-        elif body_upper == "RESOLVED":
-            # Find and resolve active escalation
-            # Query patients for this CHW
             patients_result = await db.execute(
                 select(Patient).where(Patient.chw_id == chw.id)
             )
@@ -304,24 +284,52 @@ async def handle_escalation_reply(from_number: str, body: str, db: AsyncSession)
                 )
                 esc = esc_result.scalar_one_or_none()
                 if esc:
-                    esc.status = "resolved"
-                    esc.resolved_at = datetime.utcnow()
+                    esc.chw_acknowledged_at = datetime.now(timezone.utc)
+                    await send_sms(chw.phone_number, "Thank you. Stay safe.", db=db)
+                    return True
+
+        elif body_upper == "UNAVAILABLE":
+            # Try secondary CHW — handled by follow-up loop
+            return True
+
+        elif body_upper == "RESOLVED":
+            # Find the most recent active escalation across all this CHW's patients
+            esc_result = await db.execute(
+                select(EscalationEvent)
+                .join(Patient, EscalationEvent.patient_id == Patient.id)
+                .where(
+                    Patient.chw_id == chw.id,
+                    EscalationEvent.status == "active",
+                )
+                .order_by(EscalationEvent.created_at.desc())
+                .limit(1)
+            )
+            esc = esc_result.scalar_one_or_none()
+            if esc:
+                esc.status = "resolved"
+                esc.resolved_at = datetime.now(timezone.utc)
+
+                patient_result = await db.execute(
+                    select(Patient).where(Patient.id == esc.patient_id)
+                )
+                patient = patient_result.scalar_one_or_none()
+                if patient:
                     patient.current_risk_tier = 0
                     patient.check_in_frequency = "standard"
 
-                    # Remove follow-up job
-                    from app.services.scheduler_service import scheduler
-                    try:
-                        scheduler.remove_job(f"followup_{esc.id}")
-                    except Exception:
-                        pass
+                # Remove follow-up job
+                from app.services.scheduler_service import scheduler
+                try:
+                    scheduler.remove_job(f"followup_{esc.id}")
+                except Exception:
+                    pass
 
-                    await send_sms(
-                        chw.phone_number,
-                        f"Escalation for {patient.name} resolved. Thank you.",
-                        db=db,
-                    )
-                    return True
+                await send_sms(
+                    chw.phone_number,
+                    f"Escalation for {patient.name if patient else 'patient'} resolved. Thank you.",
+                    db=db,
+                )
+                return True
 
     # Check if sender is a transport contact
     transport_result = await db.execute(
@@ -340,7 +348,7 @@ async def handle_escalation_reply(from_number: str, body: str, db: AsyncSession)
             )
             esc = esc_result.scalar_one_or_none()
             if esc:
-                esc.transport_confirmed_at = datetime.utcnow()
+                esc.transport_confirmed_at = datetime.now(timezone.utc)
                 # Notify patient
                 patient_result = await db.execute(
                     select(Patient).where(Patient.id == esc.patient_id)
