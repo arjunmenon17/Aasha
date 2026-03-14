@@ -75,6 +75,8 @@ export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const aboutRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const ORB_COLORS = ['#fda4af', '#fb7185', '#f9a8d4', '#fecdd3', '#fbcfe8'];
@@ -145,95 +147,159 @@ export function Login({ onEnter }: LoginProps) {
     setCursor({ x, y });
   };
 
+  const scrollToAbout = () => {
+    aboutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const scrollToTop = () => {
+    heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-white"
+      className="h-screen overflow-y-auto overflow-x-hidden bg-white snap-y snap-mandatory scrollbar-hide"
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
-      {/* Animated orbs + flowers */}
-      <div
-        className="absolute inset-0 pointer-events-none overflow-hidden"
-        style={{
-          transform: `translate3d(${orbsShiftX}px, ${orbsShiftY}px, 0)`,
-        }}
+      {/* Section 1: Hero */}
+      <section
+        ref={heroRef}
+        className="min-h-screen flex flex-col items-center justify-center px-6 relative snap-start snap-always"
       >
-        {orbs.map((orb) => {
-          const p = hovering
-            ? repelPoint(orb.left, orb.top, cursor.x, cursor.y, repelRadius, repelStrength)
-            : { left: orb.left, top: orb.top };
-          return (
-            <div
-              key={orb.id}
-              className="login-orb absolute rounded-full blur-3xl"
-              style={{
-                left: `${p.left}%`,
-                top: `${p.top}%`,
-                width: orb.size,
-                height: orb.size,
-                backgroundColor: orb.color,
-                animationDelay: `${orb.delay}ms`,
-                transition: 'left 90ms ease-out, top 90ms ease-out',
-              }}
-            />
-          );
-        })}
-        {flowers.map((f) => {
-          const p = hovering
-            ? repelPoint(f.left, f.top, cursor.x, cursor.y, repelRadius, repelStrength + 4)
-            : { left: f.left, top: f.top };
-          return <Flower key={f.id} left={p.left} top={p.top} size={f.size} />;
-        })}
-      </div>
-
-      <div
-        className="absolute inset-0 pointer-events-none z-[2]"
-        style={{
-          background: `radial-gradient(480px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0) 60%)`,
-        }}
-      />
-
-      {/* Content on top */}
-      <div
-        className="relative z-10 flex flex-col items-center text-center"
-        style={{
-          color: TEXT_COLOR,
-          transform: `translate3d(${contentShiftX}px, ${contentShiftY}px, 0)`,
-          transition: 'transform 80ms ease-out',
-        }}
-      >
-        <img
-          src="/aasha.png"
-          alt="Aasha"
-          className="h-20 sm:h-24 md:h-28 w-auto mb-3 object-contain"
-        />
-        <h1
-          className="text-6xl sm:text-7xl md:text-8xl font-bold tracking-[0.35em] uppercase mb-2"
-          style={{ fontFamily: 'Outfit, system-ui, sans-serif', color: TEXT_COLOR }}
-        >
-          AASHA
-        </h1>
-        <p
-          className="text-sm tracking-[0.3em] uppercase mb-10 font-medium"
-          style={{ fontFamily: 'Outfit, system-ui, sans-serif', color: TEXT_COLOR }}
-        >
-          Obstetric Monitoring for Clinicians
-        </p>
-
-        <button
-          type="button"
-          onClick={onEnter}
-          className="relative z-10 px-10 py-3.5 rounded-xl bg-white border border-pregnancy font-medium text-sm tracking-wide hover:bg-pregnancy/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#B85050]/15"
+        {/* Animated orbs + flowers — extended bounds so no visible edge when moving cursor */}
+        <div
+          className="absolute pointer-events-none overflow-hidden -top-[45%] -left-[20%] -right-[20%] -bottom-[20%]"
           style={{
-            fontFamily: 'Outfit, system-ui, sans-serif',
-            color: BUTTON_TEXT_COLOR,
-            transform: `translate3d(${(cursor.x - 50) * -0.05}px, ${(cursor.y - 50) * -0.04}px, 0)`,
+            transform: `translate3d(${orbsShiftX}px, ${orbsShiftY}px, 0)`,
           }}
         >
-          Login
-        </button>
-      </div>
+          {orbs.map((orb) => {
+            const p = hovering
+              ? repelPoint(orb.left, orb.top, cursor.x, cursor.y, repelRadius, repelStrength)
+              : { left: orb.left, top: orb.top };
+            return (
+              <div
+                key={orb.id}
+                className="login-orb absolute rounded-full blur-3xl"
+                style={{
+                  left: `${p.left}%`,
+                  top: `${p.top}%`,
+                  width: orb.size,
+                  height: orb.size,
+                  backgroundColor: orb.color,
+                  animationDelay: `${orb.delay}ms`,
+                  transition: 'left 90ms ease-out, top 90ms ease-out',
+                }}
+              />
+            );
+          })}
+          {flowers.map((f) => {
+            const p = hovering
+              ? repelPoint(f.left, f.top, cursor.x, cursor.y, repelRadius, repelStrength + 4)
+              : { left: f.left, top: f.top };
+            return <Flower key={f.id} left={p.left} top={p.top} size={f.size} />;
+          })}
+        </div>
+
+        <div
+          className="absolute inset-0 pointer-events-none z-[2]"
+          style={{
+            background: `radial-gradient(480px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0) 60%)`,
+          }}
+        />
+
+        {/* Hero content */}
+        <div
+          className="relative z-10 flex flex-col items-center text-center"
+          style={{
+            color: TEXT_COLOR,
+            transform: `translate3d(${contentShiftX}px, ${contentShiftY}px, 0)`,
+            transition: 'transform 80ms ease-out',
+          }}
+        >
+          <img
+            src="/aasha.png"
+            alt="Aasha"
+            className="h-20 sm:h-24 md:h-28 w-auto mb-3 object-contain"
+          />
+          <h1
+            className="text-6xl sm:text-7xl md:text-8xl font-bold tracking-[0.35em] uppercase mb-2"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif', color: TEXT_COLOR }}
+          >
+            AASHA
+          </h1>
+          <p
+            className="text-sm tracking-[0.3em] uppercase mb-10 font-medium"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif', color: TEXT_COLOR }}
+          >
+            Obstetric Monitoring for Clinicians
+          </p>
+
+          <button
+            type="button"
+            onClick={onEnter}
+            className="relative z-10 px-10 py-3.5 rounded-xl bg-white border border-pregnancy font-medium text-sm tracking-wide hover:bg-pregnancy/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#B85050]/15"
+            style={{
+              fontFamily: 'Outfit, system-ui, sans-serif',
+              color: BUTTON_TEXT_COLOR,
+              transform: `translate3d(${(cursor.x - 50) * -0.05}px, ${(cursor.y - 50) * -0.04}px, 0)`,
+            }}
+          >
+            Login
+          </button>
+
+          <button
+            type="button"
+            onClick={scrollToAbout}
+            className="relative z-10 mt-6 flex flex-col items-center bg-transparent border-none text-slate-600 hover:text-slate-900 cursor-pointer font-medium text-sm tracking-wide transition-colors duration-200 outline-none focus:ring-0 focus:outline-none"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+            aria-label="About Aasha — scroll to summary"
+          >
+            <span>About</span>
+            <span className="flex flex-col items-center mt-1" aria-hidden>
+              <span className="w-px h-5 bg-current opacity-70" />
+              <span className="text-[8px] leading-none mt-0.5">▼</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      {/* Section 2: About page */}
+      <section
+        ref={aboutRef}
+        className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-slate-50/80 snap-start snap-always"
+      >
+        <div className="w-full max-w-lg text-center">
+          <h2
+            className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight mb-6"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+          >
+            About Aasha
+          </h2>
+          <p
+            className="text-slate-700 text-base sm:text-lg leading-relaxed mb-10"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+          >
+            <strong className="text-slate-900">Aasha</strong> helps community healthcare workers monitor pregnant and
+            postpartum women in low-resource settings. Mothers report symptoms via <strong>simple SMS</strong> on a basic
+            phone—no smartphone or internet needed. The system turns those messages into structured risk signals so
+            healthcare workers can see who needs follow-up first and bridge the gap between in-person visits.
+          </p>
+          <button
+            type="button"
+            onClick={scrollToTop}
+            className="flex flex-col items-center bg-transparent border-none text-slate-600 hover:text-slate-900 cursor-pointer font-medium text-sm tracking-wide transition-colors duration-200 outline-none focus:ring-0 focus:outline-none mx-auto"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+            aria-label="Back to top"
+          >
+            <span className="flex flex-col items-center mb-1" aria-hidden>
+              <span className="text-[8px] leading-none mb-0.5">▲</span>
+              <span className="w-px h-5 bg-current opacity-70" />
+            </span>
+            <span>Back</span>
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

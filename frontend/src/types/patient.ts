@@ -46,19 +46,23 @@ export interface Patient {
   status: 'pregnant' | 'postpartum';
   gestational_age_at_enrollment: number;
   enrollment_date: string;
+  estimated_due_date?: string | null;
   check_in_frequency: string;
   current_risk_tier: RiskTier;
   risk_factors?: Record<string, boolean>;
+  baseline?: Record<string, unknown> | null;
   location_label?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
   consecutive_misses?: number;
-  updated_at: string;
-  /** Patient's health zone (references health_zones.id) */
-  health_zone_id?: string | null;
+  delivery_date?: string | null;
   address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  created_at?: string;
+  updated_at: string;
+  /** Patient's health zone (references health_zones.id) */
+  health_zone_id?: string | null;
 }
 
 export interface PatientDetail extends Patient {

@@ -155,21 +155,21 @@ CREATE TABLE sms_log (
 -- SEED DATA (fixed UUIDs for reproducibility)
 -- =============================================================================
 
--- Health zone (region = area code, rural Ontario N0G)
+-- Health zone: one small area only — Hay River town + bush/rural nearby (walk/drive minutes)
 INSERT INTO health_zones (id, name, region) VALUES
-('a1000000-0000-4000-8000-000000000001', 'North Wellington Rural', 'N0G');
+('a1000000-0000-4000-8000-000000000001', 'Hay River & Bush, NT', 'X0E');
 
--- CHWs
+-- CHWs (both cover same zone — town and nearby bush/trails)
 INSERT INTO community_health_workers (id, name, phone_number, zone_id) VALUES
-('b2000000-0000-4000-8000-000000000001', 'Marie Lefebvre', '+15195551234', 'a1000000-0000-4000-8000-000000000001'),
-('b2000000-0000-4000-8000-000000000002', 'Sarah Chen', '+15195551235', 'a1000000-0000-4000-8000-000000000001');
+('b2000000-0000-4000-8000-000000000001', 'Marie Lefebvre', '+18675551234', 'a1000000-0000-4000-8000-000000000001'),
+('b2000000-0000-4000-8000-000000000002', 'Sarah Chen', '+18675551235', 'a1000000-0000-4000-8000-000000000001');
 
--- Facilities
+-- Facilities: local health centre + territorial referral hospital
 INSERT INTO health_facilities (id, name, facility_level, phone_number, zone_id, capabilities) VALUES
-('c3000000-0000-4000-8000-000000000001', 'Listowel Memorial Hospital', 'district_hospital', '+15192915555', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
-('c3000000-0000-4000-8000-000000000002', 'Palmerston Community Health Centre', 'health_center', '+15195552222', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
+('c3000000-0000-4000-8000-000000000001', 'Stanton Territorial Hospital', 'district_hospital', '+18676731234', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
+('c3000000-0000-4000-8000-000000000002', 'Hay River Community Health Centre', 'health_center', '+18678751234', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
 
--- Patients (rural Ontario, Canada — N0G area: Listowel, Palmerston, Harriston)
+-- Patients (one region only: Hay River town + KFN + some in the woods/rural nearby)
 INSERT INTO patients (
     id, name, phone_number, gestational_age_at_enrollment, enrollment_date, estimated_due_date,
     status, current_risk_tier, check_in_frequency, baseline, risk_factors,
@@ -178,7 +178,7 @@ INSERT INTO patients (
 (
     '1673852d-11b6-4fcc-a94f-7d1c3046b32a',
     'Emily Morrison',
-    '+15195551001',
+    '+18675551001',
     196,
     now() - interval '30 days',
     now() + interval '54 days',
@@ -191,14 +191,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '1245 Concession Rd 4, Listowel, ON N4W 2G9',
-    43.7320,
-    -80.9480
+    '42 Woodland Dr, Hay River, NT X0E 1G2',
+    60.8153,
+    -115.7992
 ),
 (
     'd4000000-0000-4000-8000-000000000002',
     'Jennifer Walsh',
-    '+15195551002',
+    '+18675551002',
     224,
     now() - interval '30 days',
     now() + interval '26 days',
@@ -211,14 +211,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'RR 2, Palmerston, ON N0G 2P0',
-    43.8350,
-    -80.8510
+    'Trail off Poplar Rd (bush), Hay River, NT X0E 1G2',
+    60.8125,
+    -115.8020
 ),
 (
     'd4000000-0000-4000-8000-000000000003',
     'Amanda Reid',
-    '+15195551003',
+    '+18675551003',
     140,
     now() - interval '30 days',
     now() + interval '110 days',
@@ -231,14 +231,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '88 Main St E, Harriston, ON N0G 1Z0',
-    43.9650,
-    -80.5630
+    'Kátł''odeeche First Nation, Hay River, NT X0E 1G4',
+    60.8240,
+    -115.7720
 ),
 (
     'd4000000-0000-4000-8000-000000000004',
     'Michelle Thompson',
-    '+15195551004',
+    '+18675551004',
     252,
     now() - interval '30 days',
     now() - interval '2 days',
@@ -251,14 +251,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '2675 Line 86, Listowel, ON N4W 3H2',
-    43.7180,
-    -80.9620
+    'Cabin off Mackenzie Hwy (woods), Hay River, NT X0E 1G2',
+    60.8170,
+    -115.8060
 ),
 (
     'd4000000-0000-4000-8000-000000000005',
     'Kristen MacLeod',
-    '+15195551005',
+    '+18675551005',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -271,14 +271,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '3 days',
-    '412 Wellington Rd 109, Palmerston, ON N0G 2P0',
-    43.8280,
-    -80.8680
+    '15 McDougal Rd, Hay River, NT X0E 1G2',
+    60.8180,
+    -115.7950
 ),
 (
     'd4000000-0000-4000-8000-000000000006',
     'Nicole Dubois',
-    '+15195551006',
+    '+18675551006',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -291,9 +291,169 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '5 days',
-    '156 Elora St, Harriston, ON N0G 1Z0',
-    43.9580,
-    -80.5710
+    'Trail 4 (bush), Kátł''odeeche First Nation, Hay River, NT X0E 1G4',
+    60.8210,
+    -115.7680
+),
+(
+    'd4000000-0000-4000-8000-000000000007',
+    'Catherine Nitsiza',
+    '+18675551007',
+    168,
+    now() - interval '45 days',
+    now() + interval '102 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1, 2], "response_rate": 0.95, "checkins_completed": 4, "baseline_established": true}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Off Woodland Dr (rural), Hay River, NT X0E 1G2',
+    60.8140,
+    -115.8010
+),
+(
+    'd4000000-0000-4000-8000-000000000008',
+    'Laura Tatti',
+    '+18675551008',
+    210,
+    now() - interval '20 days',
+    now() + interval '60 days',
+    'pregnant',
+    1,
+    'standard',
+    '{"headache_history": [1, 1, 2, 1, 1], "headache_frequency": 0.2, "typical_swelling_location": "1", "wellbeing_scores": [1, 2, 2, 1, 1], "response_rate": 0.9, "checkins_completed": 5, "baseline_established": true}',
+    '{"age_over_35": true}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    '22 Riverview Dr, Hay River, NT X0E 1G2',
+    60.8165,
+    -115.7970
+),
+(
+    'd4000000-0000-4000-8000-000000000009',
+    'Diane Migwi',
+    '+18675551009',
+    98,
+    now() - interval '60 days',
+    now() + interval '182 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1], "response_rate": 1.0, "checkins_completed": 2, "baseline_established": false}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Bush road off reserve (woods), KFN, Hay River, NT X0E 1G4',
+    60.8260,
+    -115.7650
+),
+(
+    'd4000000-0000-4000-8000-00000000000a',
+    'Angela Kotchea',
+    '+18675551010',
+    238,
+    now() - interval '25 days',
+    now() + interval '12 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1, 2, 1], "response_rate": 0.85, "checkins_completed": 6, "baseline_established": true}',
+    '{"primigravida": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    '8 Poplar Rd, Hay River, NT X0E 1G2',
+    60.8120,
+    -115.8010
+),
+(
+    'd4000000-0000-4000-8000-00000000000b',
+    'Melanie Yukon',
+    '+18675551011',
+    266,
+    now() - interval '35 days',
+    now() - interval '8 days',
+    'postpartum',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1], "response_rate": 1.0, "checkins_completed": 12, "baseline_established": true}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    now() - interval '6 days',
+    '31 Mackenzie Dr, Hay River, NT X0E 1G2',
+    60.8110,
+    -115.8030
+),
+(
+    'd4000000-0000-4000-8000-00000000000c',
+    'Beth Norman',
+    '+18675551012',
+    182,
+    now() - interval '40 days',
+    now() + interval '88 days',
+    'pregnant',
+    2,
+    'daily',
+    '{"headache_history": [1, 2, 2, 2, 1], "headache_frequency": 0.6, "typical_swelling_location": "2", "wellbeing_scores": [2, 2, 1, 2, 2], "response_rate": 0.9, "checkins_completed": 5, "baseline_established": true}',
+    '{"chronic_hypertension": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'RR1 Hay River (back road), NT X0E 1G2',
+    60.8195,
+    -115.7910
+),
+(
+    'd4000000-0000-4000-8000-00000000000d',
+    'Patricia Simba',
+    '+18675551013',
+    252,
+    now() - interval '28 days',
+    now() - interval '1 day',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 2, 1], "response_rate": 0.95, "checkins_completed": 5, "baseline_established": true}',
+    '{}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'Hay River, NT X0E 1G2',
+    60.8190,
+    -115.7920
+),
+(
+    'd4000000-0000-4000-8000-00000000000e',
+    'Rachel Koe',
+    '+18675551014',
+    126,
+    now() - interval '50 days',
+    now() + interval '144 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1], "response_rate": 1.0, "checkins_completed": 3, "baseline_established": false}',
+    '{"primigravida": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Cabin in woods off reserve, KFN, Hay River, NT X0E 1G4',
+    60.8220,
+    -115.7700
 );
 
 -- Clinical assessments (Amina Tier 3, Fatima Tier 2)
@@ -309,7 +469,7 @@ INSERT INTO clinical_assessments (
     'Primigravida at 32 weeks presents with severe headache (3/3, >2 days), visual disturbances (seeing spots), facial and hand edema, and epigastric pain. This constellation of 4 concurrent preeclampsia danger signs in a primigravida at high-risk gestational age meets WHO criteria for urgent referral.',
     '[{"chunk_id": "figo_hd_2019_003", "source": "FIGO Hypertensive Disorders in Pregnancy Guidelines, 2019", "relevant_finding": "Visual disturbances, severe headache, epigastric pain, and sudden facial edema together indicate severe preeclampsia requiring urgent evaluation."}]',
     '{"risk_tier": 3, "escalate_immediately": true, "primary_concern": "Possible severe preeclampsia — 4 concurrent danger signs", "symptom_analysis": {"headache": {"reported": true, "value": "severity 3/3, >2 days", "baseline_deviation": "critical"}, "vision_disturbance": {"reported": true, "value": "seeing spots", "baseline_deviation": "critical"}, "swelling": {"reported": true, "value": "face and hands", "baseline_deviation": "critical"}, "abdominal_pain": {"reported": true, "value": "upper belly pain", "baseline_deviation": "critical"}}}',
-    '["Transport patient to Listowel Memorial Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
+    '["Transport patient to Stanton Territorial Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
     '["Blood pressure not available via SMS"]',
     'severe headache persistent visual disturbance photopsia facial hand edema preeclampsia epigastric pain third trimester primigravida',
     '["figo_hd_2019_003", "who_pe_2011_007"]',
