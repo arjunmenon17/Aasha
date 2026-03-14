@@ -358,8 +358,21 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
             Live map with risk-prioritized route
           </div>
         </div>
-        <div className="text-[0.68rem] text-slate-500 text-right">
-          OSM basemap · click markers to show details in panel
+        <div className="flex flex-col items-end gap-1.5 text-right">
+          <div className="text-[0.68rem] text-slate-500">
+            OSM basemap · click markers to show details in panel
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-0.5 text-[0.7rem] text-slate-600">
+            {([3, 2, 1, 0] as RiskTier[]).map((tier) => (
+              <span key={tier} className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: TIER_COLOR[tier] }}
+                />
+                <span>T{tier} {tierLabel(tier)}</span>
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -371,9 +384,9 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
               zoom={12}
               scrollWheelZoom
               className="h-full w-full"
+              attributionControl={false}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <FitToBounds bounds={bounds} />
@@ -473,25 +486,6 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-[0.72rem] text-slate-700">
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
-          Tier 3 emergency
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-orange-600 inline-block" />
-          Tier 2 concern
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-600 inline-block" />
-          Tier 1 watch
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-600 inline-block" />
-          Tier 0 normal
-        </span>
       </div>
     </div>
   );
