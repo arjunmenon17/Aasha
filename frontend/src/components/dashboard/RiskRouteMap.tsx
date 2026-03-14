@@ -223,31 +223,10 @@ function routeDistanceKm(route: MapNode[]): number {
   return total;
 }
 
-const OSRM_BASE = 'https://router.project-osrm.org';
-
-/** Fetch road/path-following walking route; returns [lat, lng][] or null on failure. */
-async function fetchWalkingRoute(waypoints: MapNode[]): Promise<LatLngTuple[] | null> {
-  if (waypoints.length < 2) return null;
-  const coords = waypoints.map((n) => `${n.lng},${n.lat}`).join(';');
-  const url = `${OSRM_BASE}/route/v1/foot/${coords}?overview=full&geometries=geojson`;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      routes?: Array<{ geometry?: { coordinates?: [number, number][] } }>;
-    };
-    const coordsList = data.routes?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordsList) || coordsList.length < 2) return null;
-    return coordsList.map(([lng, lat]) => [lat, lng] as LatLngTuple);
-  } catch {
-    return null;
-  }
-}
-
 function sequenceIcon(sequence: number): L.DivIcon {
   return L.divIcon({
     className: '',
-    html: `<div style="width:18px;height:18px;border-radius:9999px;background:#0f172a;color:#fff;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;line-height:1;">${sequence}</div>`,
+    html: `<div style="width:18px;height:18px;border-radius:9999px;background:transparent;color:#fff;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;line-height:1;text-shadow:0 0 1px #000, 0 0 2px #000;">${sequence}</div>`,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
@@ -378,8 +357,6 @@ function NodeMarkers({
 export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [roadRouteLine, setRoadRouteLine] = useState<LatLngTuple[] | null>(null);
-
   const nodesRaw = useMemo(() => toNodes(patients), [patients]);
   const nodes = useMemo(() => deconflictNodes(nodesRaw), [nodesRaw]);
   const route = useMemo(() => buildRoute(nodes), [nodes]);
@@ -390,23 +367,10 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
     return map;
   }, [route]);
 
-  const straightLine = useMemo(
+  const routeLine = useMemo(
     () => route.map((n) => [n.lat, n.lng] as LatLngTuple),
     [route],
   );
-  const routeLine = roadRouteLine && roadRouteLine.length > 1 ? roadRouteLine : straightLine;
-
-  const routeKeyRef = useRef<string>('');
-  useEffect(() => {
-    const routeKey = route.map((n) => n.id).join(',');
-    routeKeyRef.current = routeKey;
-    setRoadRouteLine(null);
-    if (route.length < 2) return;
-    fetchWalkingRoute(route).then((geometry) => {
-      if (routeKeyRef.current !== routeKey) return;
-      setRoadRouteLine(geometry);
-    });
-  }, [route]);
 
   const distanceKm = routeDistanceKm(route);
 
@@ -417,12 +381,25 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
           <div className="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-slate-500">
             CHW Route Planner
           </div>
-          <div className="text-sm font-semibold text-slate-900">
+          <div className="text-base font-bold text-slate-900">
             Live map with risk-prioritized route
           </div>
         </div>
-        <div className="text-[0.68rem] text-slate-500 text-right">
-          OSM basemap · click markers to show details in panel
+        <div className="flex flex-col items-end gap-1.5 text-right">
+          <div className="text-[0.68rem] text-slate-500">
+            OSM basemap · click markers to show details in panel
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-0.5 text-[0.7rem] text-slate-600">
+            {([3, 2, 1, 0] as RiskTier[]).map((tier) => (
+              <span key={tier} className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: TIER_COLOR[tier] }}
+                />
+                <span>T{tier} {tierLabel(tier)}</span>
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -434,9 +411,9 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
               zoom={12}
               scrollWheelZoom
               className="h-full w-full"
+              attributionControl={false}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <FitToBounds bounds={bounds} />
@@ -536,25 +513,6 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-[0.72rem] text-slate-700">
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
-          Tier 3 emergency
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-orange-600 inline-block" />
-          Tier 2 concern
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-600 inline-block" />
-          Tier 1 watch
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-600 inline-block" />
-          Tier 0 normal
-        </span>
       </div>
     </div>
   );

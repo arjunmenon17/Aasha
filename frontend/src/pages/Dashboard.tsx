@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PatientList, RiskRouteMap, Severity3DGraph } from '@/components/dashboard';
+import { PatientList, RiskRouteMap } from '@/components/dashboard';
 import type { PatientsResponse, RiskTier } from '@/types';
 import {
   ResponsiveContainer,
@@ -61,7 +61,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
         <div className="lg:col-span-2 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3 shrink-0 gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900">
                 Patients in Need
               </h2>
               <span className="text-xs text-slate-500">
@@ -116,7 +116,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                 <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
                   Calendar
                 </div>
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="text-base font-bold text-slate-900">
                   {monthName} {year}
                 </div>
               </div>
@@ -160,7 +160,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                 <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
                   Current Load
                 </div>
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="text-base font-bold text-slate-900">
                   Patients by severity
                 </div>
               </div>
@@ -214,9 +214,6 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
 
       {/* Full-width route map */}
       <RiskRouteMap patients={data.patients} onSelectPatient={onSelectPatient} />
-
-      {/* Full-width 3D severity graph */}
-      <Severity3DGraph patients={data.patients} onSelectPatient={onSelectPatient} />
     </div>
   );
 }
