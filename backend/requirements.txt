@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+apscheduler
+anthropic
+moorcheh-sdk
+twilio
+python-dotenv
+pydantic
+pydantic-settings
+httpx
