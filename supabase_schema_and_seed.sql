@@ -155,21 +155,21 @@ CREATE TABLE sms_log (
 -- SEED DATA (fixed UUIDs for reproducibility)
 -- =============================================================================
 
--- Health zone (region = area code e.g. L6Y)
+-- Health zone (region = area code, rural Ontario N0G)
 INSERT INTO health_zones (id, name, region) VALUES
-('a1000000-0000-4000-8000-000000000001', 'Kibera Zone A', 'L6Y');
+('a1000000-0000-4000-8000-000000000001', 'North Wellington Rural', 'N0G');
 
 -- CHWs
 INSERT INTO community_health_workers (id, name, phone_number, zone_id) VALUES
-('b2000000-0000-4000-8000-000000000001', 'Grace Wanjiku', '+254700111222', 'a1000000-0000-4000-8000-000000000001'),
-('b2000000-0000-4000-8000-000000000002', 'Mary Akinyi', '+254700111333', 'a1000000-0000-4000-8000-000000000001');
+('b2000000-0000-4000-8000-000000000001', 'Marie Lefebvre', '+15195551234', 'a1000000-0000-4000-8000-000000000001'),
+('b2000000-0000-4000-8000-000000000002', 'Sarah Chen', '+15195551235', 'a1000000-0000-4000-8000-000000000001');
 
 -- Facilities
 INSERT INTO health_facilities (id, name, facility_level, phone_number, zone_id, capabilities) VALUES
-('c3000000-0000-4000-8000-000000000001', 'Kibera District Hospital', 'district_hospital', '+254700222333', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
-('c3000000-0000-4000-8000-000000000002', 'Kibera Health Centre', 'health_center', '+254700222444', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
+('c3000000-0000-4000-8000-000000000001', 'Listowel Memorial Hospital', 'district_hospital', '+15192915555', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
+('c3000000-0000-4000-8000-000000000002', 'Palmerston Community Health Centre', 'health_center', '+15195552222', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
 
--- Patients
+-- Patients (rural Ontario, Canada — N0G area: Listowel, Palmerston, Harriston)
 INSERT INTO patients (
     id, name, phone_number, gestational_age_at_enrollment, enrollment_date, estimated_due_date,
     status, current_risk_tier, check_in_frequency, baseline, risk_factors,
@@ -177,8 +177,8 @@ INSERT INTO patients (
 ) VALUES
 (
     '1673852d-11b6-4fcc-a94f-7d1c3046b32a',
-    'Amina Hassan',
-    '+254711001001',
+    'Emily Morrison',
+    '+15195551001',
     196,
     now() - interval '30 days',
     now() + interval '54 days',
@@ -191,14 +191,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '12 Kisumu Road, Kibera',
-    -1.3040,
-    36.7980
+    '1245 Concession Rd 4, Listowel, ON N4W 2G9',
+    43.7320,
+    -80.9480
 ),
 (
     'd4000000-0000-4000-8000-000000000002',
-    'Fatima Osman',
-    '+254711002002',
+    'Jennifer Walsh',
+    '+15195551002',
     224,
     now() - interval '30 days',
     now() + interval '26 days',
@@ -211,14 +211,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '5 Olympic Estate, Kibera',
-    -1.3030,
-    36.7990
+    'RR 2, Palmerston, ON N0G 2P0',
+    43.8350,
+    -80.8510
 ),
 (
     'd4000000-0000-4000-8000-000000000003',
-    'Sarah Njeri',
-    '+254711003003',
+    'Amanda Reid',
+    '+15195551003',
     140,
     now() - interval '30 days',
     now() + interval '110 days',
@@ -231,14 +231,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '8 Gatina Village, Kibera',
-    -1.3050,
-    36.7970
+    '88 Main St E, Harriston, ON N0G 1Z0',
+    43.9650,
+    -80.5630
 ),
 (
     'd4000000-0000-4000-8000-000000000004',
-    'Wanjiku Mwangi',
-    '+254711004004',
+    'Michelle Thompson',
+    '+15195551004',
     252,
     now() - interval '30 days',
     now() - interval '2 days',
@@ -251,14 +251,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '3 Lindi Street, Kibera',
-    -1.3060,
-    36.7960
+    '2675 Line 86, Listowel, ON N4W 3H2',
+    43.7180,
+    -80.9620
 ),
 (
     'd4000000-0000-4000-8000-000000000005',
-    'Aisha Mohamed',
-    '+254711005005',
+    'Kristen MacLeod',
+    '+15195551005',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -271,14 +271,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '3 days',
-    '15 Makina Road, Kibera',
-    -1.3070,
-    36.7950
+    '412 Wellington Rd 109, Palmerston, ON N0G 2P0',
+    43.8280,
+    -80.8680
 ),
 (
     'd4000000-0000-4000-8000-000000000006',
-    'Zainab Ali',
-    '+254711006006',
+    'Nicole Dubois',
+    '+15195551006',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -291,9 +291,9 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '5 days',
-    '7 Silanga Zone, Kibera',
-    -1.3080,
-    36.7940
+    '156 Elora St, Harriston, ON N0G 1Z0',
+    43.9580,
+    -80.5710
 );
 
 -- Clinical assessments (Amina Tier 3, Fatima Tier 2)
@@ -309,7 +309,7 @@ INSERT INTO clinical_assessments (
     'Primigravida at 32 weeks presents with severe headache (3/3, >2 days), visual disturbances (seeing spots), facial and hand edema, and epigastric pain. This constellation of 4 concurrent preeclampsia danger signs in a primigravida at high-risk gestational age meets WHO criteria for urgent referral.',
     '[{"chunk_id": "figo_hd_2019_003", "source": "FIGO Hypertensive Disorders in Pregnancy Guidelines, 2019", "relevant_finding": "Visual disturbances, severe headache, epigastric pain, and sudden facial edema together indicate severe preeclampsia requiring urgent evaluation."}]',
     '{"risk_tier": 3, "escalate_immediately": true, "primary_concern": "Possible severe preeclampsia — 4 concurrent danger signs", "symptom_analysis": {"headache": {"reported": true, "value": "severity 3/3, >2 days", "baseline_deviation": "critical"}, "vision_disturbance": {"reported": true, "value": "seeing spots", "baseline_deviation": "critical"}, "swelling": {"reported": true, "value": "face and hands", "baseline_deviation": "critical"}, "abdominal_pain": {"reported": true, "value": "upper belly pain", "baseline_deviation": "critical"}}}',
-    '["Transport patient to Kibera District Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
+    '["Transport patient to Listowel Memorial Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
     '["Blood pressure not available via SMS"]',
     'severe headache persistent visual disturbance photopsia facial hand edema preeclampsia epigastric pain third trimester primigravida',
     '["figo_hd_2019_003", "who_pe_2011_007"]',
