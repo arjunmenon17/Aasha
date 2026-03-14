@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MouseEvent } from 'react';
 import { Flower } from '@/components/login/Flower';
 
 interface LoginProps {
@@ -43,9 +43,10 @@ function randomPositionAvoidingCenter() {
 
 export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
+  const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const ORB_COLORS = ['#fecaca', '#fee2e2', '#ffc9d0', '#fbcfe8', '#fce7f3'];
+  const ORB_COLORS = ['#fda4af', '#fb7185', '#f9a8d4', '#fecdd3', '#fbcfe8'];
   const [orbs, setOrbs] = useState<
     { id: number; left: number; top: number; size: number; color: string; delay: number }[]
   >(() => {
@@ -99,10 +100,33 @@ export function Login({ onEnter }: LoginProps) {
     return () => clearInterval(interval);
   }, []);
 
+  const contentShiftX = (cursor.x - 50) * -0.14;
+  const contentShiftY = (cursor.y - 50) * -0.1;
+  const orbsShiftX = (cursor.x - 50) * 0.1;
+  const orbsShiftY = (cursor.y - 50) * 0.08;
+  const clearRadius = 170;
+
+  const handleMouseMove = (ev: MouseEvent<HTMLDivElement>) => {
+    const rect = ev.currentTarget.getBoundingClientRect();
+    const x = ((ev.clientX - rect.left) / rect.width) * 100;
+    const y = ((ev.clientY - rect.top) / rect.height) * 100;
+    setCursor({ x, y });
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-white">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-white"
+      onMouseMove={handleMouseMove}
+    >
       {/* Animated orbs + flowers */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        style={{
+          transform: `translate3d(${orbsShiftX}px, ${orbsShiftY}px, 0)`,
+          WebkitMaskImage: `radial-gradient(${clearRadius}px circle at ${cursor.x}% ${cursor.y}%, transparent 0%, transparent 54%, black 76%)`,
+          maskImage: `radial-gradient(${clearRadius}px circle at ${cursor.x}% ${cursor.y}%, transparent 0%, transparent 54%, black 76%)`,
+        }}
+      >
         {orbs.map((orb) => (
           <div
             key={orb.id}
@@ -122,10 +146,31 @@ export function Login({ onEnter }: LoginProps) {
         ))}
       </div>
 
+      <div
+        className="absolute inset-0 pointer-events-none z-[2]"
+        style={{
+          background: `radial-gradient(520px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 62%)`,
+        }}
+      />
+      <div
+        className="absolute pointer-events-none z-[3] rounded-full login-clear-ring"
+        style={{
+          left: `${cursor.x}%`,
+          top: `${cursor.y}%`,
+          width: `${clearRadius * 2}px`,
+          height: `${clearRadius * 2}px`,
+          transform: 'translate(-50%, -50%)',
+        }}
+      />
+
       {/* Content on top */}
       <div
         className="relative z-10 flex flex-col items-center text-center"
-        style={{ color: TEXT_COLOR }}
+        style={{
+          color: TEXT_COLOR,
+          transform: `translate3d(${contentShiftX}px, ${contentShiftY}px, 0)`,
+          transition: 'transform 80ms ease-out',
+        }}
       >
         <img
           src="/aasha.png"
@@ -152,6 +197,7 @@ export function Login({ onEnter }: LoginProps) {
           style={{
             fontFamily: 'Outfit, system-ui, sans-serif',
             color: BUTTON_TEXT_COLOR,
+            transform: `translate3d(${(cursor.x - 50) * -0.05}px, ${(cursor.y - 50) * -0.04}px, 0)`,
           }}
         >
           Login

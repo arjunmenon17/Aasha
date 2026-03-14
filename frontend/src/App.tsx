@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Login, Dashboard, PatientDetailPage } from '@/pages';
 import { usePatients } from '@/hooks';
 import { demoApi } from '@/api';
+import { FloralBackdrop } from '@/components/ui';
 
 export function App() {
   const [entered, setEntered] = useState(() => {
@@ -44,8 +45,9 @@ export function App() {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
+      <div className="min-h-screen relative overflow-hidden app-shell-bg flex items-center justify-center">
+        <FloralBackdrop />
+        <div className="text-center relative z-10">
           <div className="text-3xl font-bold mb-2 text-slate-900">Aasha</div>
           <div className="text-slate-500">
             {error ? `Error: ${error}` : 'Connecting to server...'}
@@ -62,9 +64,10 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <header className="flex items-center justify-between mb-6">
+    <div className="min-h-screen relative overflow-hidden app-shell-bg">
+      <FloralBackdrop />
+      <div className="max-w-6xl mx-auto px-4 py-6 relative z-10">
+        <header className="flex items-center justify-between mb-6 rounded-2xl border border-white/70 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm">
           <div className="flex items-center gap-3">
             <img
               src="/aasha.png"
@@ -124,7 +127,7 @@ export function App() {
         <div className="fixed bottom-4 right-4">
           <button
             onClick={handleSeedDemo}
-            className="bg-slate-800 text-slate-100 px-3 py-2 rounded-lg text-xs hover:bg-slate-900 shadow-md"
+            className="bg-pregnancy-dark text-white px-3 py-2 rounded-lg text-xs hover:bg-pregnancy shadow-md"
           >
             Seed Demo Data
           </button>
