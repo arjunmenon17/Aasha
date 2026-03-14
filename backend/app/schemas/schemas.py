@@ -29,6 +29,9 @@ class PatientResponse(BaseModel):
     check_in_frequency: str
     baseline: dict | None
     risk_factors: dict | None
+    location_label: str | None = None
+    location_lat: float | None = None
+    location_lng: float | None = None
     chw_id: UUID | None
     health_zone_id: UUID | None = None
     consecutive_misses: int

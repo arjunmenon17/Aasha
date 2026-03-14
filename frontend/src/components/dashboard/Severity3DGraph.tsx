@@ -5,12 +5,16 @@ import type { Patient } from '@/types';
 
 interface Severity3DGraphProps {
   patients: Patient[];
+  onSelectPatient?: (id: string) => void;
 }
 
 type Category = 'emergency' | 'urgent' | 'monitor';
 
 interface GraphPoint {
   patientId: string;
+  patientName: string;
+  tier: number;
+  status: Patient['status'];
   week: number; // X: 0-40
   daysSinceVisit: number; // Y: 0-30
   danger: number; // Z/source: 0-100
@@ -83,6 +87,9 @@ function toGraphPoints(patients: Patient[]): GraphPoint[] {
 
     return {
       patientId: p.id,
+      patientName: p.name,
+      tier: p.current_risk_tier,
+      status: p.status,
       week: weeks,
       daysSinceVisit: daysVisit,
       danger,
@@ -113,7 +120,7 @@ function gradientColorForDanger(danger: number): THREE.Color {
   return c;
 }
 
-export function Severity3DGraph({ patients }: Severity3DGraphProps) {
+export function Severity3DGraph({ patients, onSelectPatient }: Severity3DGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const xAxisLabelRef = useRef<HTMLDivElement | null>(null);
   const yAxisLabelRef = useRef<HTMLDivElement | null>(null);
@@ -397,12 +404,28 @@ export function Severity3DGraph({ patients }: Severity3DGraphProps) {
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObjects(markerMeshes, false);
       currentHover = hits.length > 0 ? (hits[0].object as THREE.Mesh) : null;
+      renderer.domElement.style.cursor = currentHover ? 'pointer' : 'default';
       if (!currentHover && tooltipRef.current) {
         tooltipRef.current = null;
         setTooltip(null);
       }
     };
+    const onPointerDown = (ev: PointerEvent) => {
+      if (!onSelectPatient) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(markerMeshes, false);
+      if (hits.length === 0) return;
+      const selected = hits[0].object as THREE.Mesh;
+      const point = selected.userData.point as GraphPoint;
+      if (point?.patientId) {
+        onSelectPatient(point.patientId);
+      }
+    };
     renderer.domElement.addEventListener('pointermove', onPointerMove);
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
 
     const clock = new THREE.Clock();
     let raf = 0;
@@ -483,6 +506,8 @@ export function Severity3DGraph({ patients }: Severity3DGraphProps) {
     return () => {
       cancelAnimationFrame(raf);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.style.cursor = 'default';
       ro.disconnect();
       controls.dispose();
       scene.traverse((obj: THREE.Object3D) => {
@@ -499,7 +524,7 @@ export function Severity3DGraph({ patients }: Severity3DGraphProps) {
         host.removeChild(renderer.domElement);
       }
     };
-  }, [points, dataSignature]);
+  }, [points, dataSignature, onSelectPatient]);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm mt-2">
@@ -513,7 +538,7 @@ export function Severity3DGraph({ patients }: Severity3DGraphProps) {
           </div>
         </div>
         <div className="text-right text-[0.68rem] text-slate-500">
-          Drag to orbit · Scroll to zoom · Shift+drag to pan
+          Drag orbit · Scroll zoom · Shift+drag pan · Click marker to open patient
         </div>
       </div>
 
@@ -548,14 +573,17 @@ export function Severity3DGraph({ patients }: Severity3DGraphProps) {
               top: tooltip.screenY - 12,
             }}
           >
-            <div className="font-semibold text-slate-900 mb-1">
-              Patient {tooltip.patientId}
+            <div className="font-semibold text-slate-900 mb-1">{tooltip.patientName}</div>
+            <div>
+              Tier {tooltip.tier} · {tooltip.status}
             </div>
             <div>Gestational week: {tooltip.week}</div>
             <div>Danger score: {tooltip.danger.toFixed(1)}</div>
             <div>Days since last visit: {tooltip.daysSinceVisit.toFixed(1)}</div>
-            <div>Village: {tooltip.village}</div>
             <div>Symptom count: {tooltip.symptomCount}</div>
+            <div className="mt-1 text-[0.68rem] text-slate-500">
+              Click marker to open patient detail
+            </div>
           </div>
         )}
       </div>
