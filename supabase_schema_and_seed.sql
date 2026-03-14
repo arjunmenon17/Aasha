@@ -154,22 +154,27 @@ CREATE TABLE sms_log (
 -- =============================================================================
 -- SEED DATA (fixed UUIDs for reproducibility)
 -- =============================================================================
+-- Context: Rural, resource-limited setting in a low-income country. In-person
+-- care is scarce; one local health centre and one distant referral hospital.
+-- Aasha’s SMS monitoring helps bridge the gap between visits and surface who
+-- needs follow-up first.
+-- =============================================================================
 
--- Health zone: one small area only — Hay River town + bush/rural nearby (walk/drive minutes)
+-- Health zone: remote catchment, rural Kenya — limited facilities, care hard to access
 INSERT INTO health_zones (id, name, region) VALUES
-('a1000000-0000-4000-8000-000000000001', 'Hay River & Bush, NT', 'X0E');
+('a1000000-0000-4000-8000-000000000001', 'Nyakach South (remote catchment), Kenya', 'KE-NY');
 
--- CHWs (both cover same zone — town and nearby bush/trails)
+-- CHWs: only two for the whole zone; cover multiple villages
 INSERT INTO community_health_workers (id, name, phone_number, zone_id) VALUES
-('b2000000-0000-4000-8000-000000000001', 'Marie Lefebvre', '+18675551234', 'a1000000-0000-4000-8000-000000000001'),
-('b2000000-0000-4000-8000-000000000002', 'Sarah Chen', '+18675551235', 'a1000000-0000-4000-8000-000000000001');
+('b2000000-0000-4000-8000-000000000001', 'Grace Wanjiku', '+254700111222', 'a1000000-0000-4000-8000-000000000001'),
+('b2000000-0000-4000-8000-000000000002', 'Mary Akinyi', '+254700111333', 'a1000000-0000-4000-8000-000000000001');
 
--- Facilities: local health centre + territorial referral hospital
+-- Facilities: one local health centre; referral hospital is far (Kisumu town)
 INSERT INTO health_facilities (id, name, facility_level, phone_number, zone_id, capabilities) VALUES
-('c3000000-0000-4000-8000-000000000001', 'Stanton Territorial Hospital', 'district_hospital', '+18676731234', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
-('c3000000-0000-4000-8000-000000000002', 'Hay River Community Health Centre', 'health_center', '+18678751234', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
+('c3000000-0000-4000-8000-000000000001', 'Kisumu County Referral Hospital', 'district_hospital', '+254572022333', 'a1000000-0000-4000-8000-000000000001', '{"emergency_obstetric": true, "blood_transfusion": true, "c_section": true}'),
+('c3000000-0000-4000-8000-000000000002', 'Nyakach Health Centre', 'health_center', '+254572022444', 'a1000000-0000-4000-8000-000000000001', '{"antenatal_care": true, "basic_emergency": true}');
 
--- Patients (one region only: Hay River town + KFN + some in the woods/rural nearby)
+-- Patients: all in a rural area where resources are limited and care is hard to get
 INSERT INTO patients (
     id, name, phone_number, gestational_age_at_enrollment, enrollment_date, estimated_due_date,
     status, current_risk_tier, check_in_frequency, baseline, risk_factors,
@@ -177,8 +182,8 @@ INSERT INTO patients (
 ) VALUES
 (
     '1673852d-11b6-4fcc-a94f-7d1c3046b32a',
-    'Emily Morrison',
-    '+18675551001',
+    'Amina Hassan',
+    '+254711001001',
     196,
     now() - interval '30 days',
     now() + interval '54 days',
@@ -191,14 +196,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '42 Woodland Dr, Hay River, NT X0E 1G2',
-    60.8153,
-    -115.7992
+    'Olare Village, Nyakach, Kisumu',
+    -0.3520,
+    34.7820
 ),
 (
     'd4000000-0000-4000-8000-000000000002',
-    'Jennifer Walsh',
-    '+18675551002',
+    'Fatima Osman',
+    '+254711002002',
     224,
     now() - interval '30 days',
     now() + interval '26 days',
@@ -211,14 +216,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'Trail off Poplar Rd (bush), Hay River, NT X0E 1G2',
-    60.8125,
-    -115.8020
+    'Near Soko Mjinga, Nyakach',
+    -0.3480,
+    34.7780
 ),
 (
     'd4000000-0000-4000-8000-000000000003',
-    'Amanda Reid',
-    '+18675551003',
+    'Sarah Njeri',
+    '+254711003003',
     140,
     now() - interval '30 days',
     now() + interval '110 days',
@@ -231,14 +236,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'Kátł''odeeche First Nation, Hay River, NT X0E 1G4',
-    60.8240,
-    -115.7720
+    'Kadiang''a, Kisumu West',
+    -0.3410,
+    34.7710
 ),
 (
     'd4000000-0000-4000-8000-000000000004',
-    'Michelle Thompson',
-    '+18675551004',
+    'Wanjiku Mwangi',
+    '+254711004004',
     252,
     now() - interval '30 days',
     now() - interval '2 days',
@@ -251,14 +256,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'Cabin off Mackenzie Hwy (woods), Hay River, NT X0E 1G2',
-    60.8170,
-    -115.8060
+    'Rodi Kopany, Nyakach',
+    -0.3580,
+    34.7880
 ),
 (
     'd4000000-0000-4000-8000-000000000005',
-    'Kristen MacLeod',
-    '+18675551005',
+    'Aisha Mohamed',
+    '+254711005005',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -271,14 +276,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '3 days',
-    '15 McDougal Rd, Hay River, NT X0E 1G2',
-    60.8180,
-    -115.7950
+    'Ombeyi Village, Nyakach',
+    -0.3450,
+    34.7750
 ),
 (
     'd4000000-0000-4000-8000-000000000006',
-    'Nicole Dubois',
-    '+18675551006',
+    'Zainab Ali',
+    '+254711006006',
     266,
     now() - interval '30 days',
     now() - interval '5 days',
@@ -291,14 +296,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     now() - interval '5 days',
-    'Trail 4 (bush), Kátł''odeeche First Nation, Hay River, NT X0E 1G4',
-    60.8210,
-    -115.7680
+    'Suna Village, Nyakach',
+    -0.3550,
+    34.7680
 ),
 (
     'd4000000-0000-4000-8000-000000000007',
-    'Catherine Nitsiza',
-    '+18675551007',
+    'Catherine Adhiambo',
+    '+254711007007',
     168,
     now() - interval '45 days',
     now() + interval '102 days',
@@ -311,14 +316,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000002',
     NULL,
-    'Off Woodland Dr (rural), Hay River, NT X0E 1G2',
-    60.8140,
-    -115.8010
+    'Got Nyabondo, Nyakach',
+    -0.3380,
+    34.7920
 ),
 (
     'd4000000-0000-4000-8000-000000000008',
-    'Laura Tatti',
-    '+18675551008',
+    'Mary Wambui',
+    '+254711008008',
     210,
     now() - interval '20 days',
     now() + interval '60 days',
@@ -331,14 +336,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '22 Riverview Dr, Hay River, NT X0E 1G2',
-    60.8165,
-    -115.7970
+    'Koru, near Muhoroni',
+    -0.3320,
+    34.7650
 ),
 (
     'd4000000-0000-4000-8000-000000000009',
-    'Diane Migwi',
-    '+18675551009',
+    'Diana Atieno',
+    '+254711009009',
     98,
     now() - interval '60 days',
     now() + interval '182 days',
@@ -351,14 +356,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000002',
     NULL,
-    'Bush road off reserve (woods), KFN, Hay River, NT X0E 1G4',
-    60.8260,
-    -115.7650
+    'Pap Onditi, Nyakach',
+    -0.3620,
+    34.7580
 ),
 (
     'd4000000-0000-4000-8000-00000000000a',
-    'Angela Kotchea',
-    '+18675551010',
+    'Grace Achieng',
+    '+254711010010',
     238,
     now() - interval '25 days',
     now() + interval '12 days',
@@ -371,14 +376,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    '8 Poplar Rd, Hay River, NT X0E 1G2',
-    60.8120,
-    -115.8010
+    'Awach, Nyakach',
+    -0.3680,
+    34.7850
 ),
 (
     'd4000000-0000-4000-8000-00000000000b',
-    'Melanie Yukon',
-    '+18675551011',
+    'Mercy Akinyi',
+    '+254711011011',
     266,
     now() - interval '35 days',
     now() - interval '8 days',
@@ -391,14 +396,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000002',
     now() - interval '6 days',
-    '31 Mackenzie Dr, Hay River, NT X0E 1G2',
-    60.8110,
-    -115.8030
+    'Rachar, Nyakach',
+    -0.3420,
+    34.7720
 ),
 (
     'd4000000-0000-4000-8000-00000000000c',
-    'Beth Norman',
-    '+18675551012',
+    'Beatrice Muthoni',
+    '+254711012012',
     182,
     now() - interval '40 days',
     now() + interval '88 days',
@@ -411,14 +416,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'RR1 Hay River (back road), NT X0E 1G2',
-    60.8195,
-    -115.7910
+    'Sigoti, Nyakach',
+    -0.3510,
+    34.7610
 ),
 (
     'd4000000-0000-4000-8000-00000000000d',
-    'Patricia Simba',
-    '+18675551013',
+    'Patricia Wanjiru',
+    '+254711013013',
     252,
     now() - interval '28 days',
     now() - interval '1 day',
@@ -431,14 +436,14 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     NULL,
-    'Hay River, NT X0E 1G2',
-    60.8190,
-    -115.7920
+    'Sondu, border Nyakach',
+    -0.3270,
+    34.7980
 ),
 (
     'd4000000-0000-4000-8000-00000000000e',
-    'Rachel Koe',
-    '+18675551014',
+    'Rachel Nyambura',
+    '+254711014014',
     126,
     now() - interval '50 days',
     now() + interval '144 days',
@@ -451,9 +456,9 @@ INSERT INTO patients (
     'a1000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000002',
     NULL,
-    'Cabin in woods off reserve, KFN, Hay River, NT X0E 1G4',
-    60.8220,
-    -115.7700
+    'Upper Nyakach, remote',
+    -0.3750,
+    34.7520
 );
 
 -- Clinical assessments (Amina Tier 3, Fatima Tier 2)
@@ -469,7 +474,7 @@ INSERT INTO clinical_assessments (
     'Primigravida at 32 weeks presents with severe headache (3/3, >2 days), visual disturbances (seeing spots), facial and hand edema, and epigastric pain. This constellation of 4 concurrent preeclampsia danger signs in a primigravida at high-risk gestational age meets WHO criteria for urgent referral.',
     '[{"chunk_id": "figo_hd_2019_003", "source": "FIGO Hypertensive Disorders in Pregnancy Guidelines, 2019", "relevant_finding": "Visual disturbances, severe headache, epigastric pain, and sudden facial edema together indicate severe preeclampsia requiring urgent evaluation."}]',
     '{"risk_tier": 3, "escalate_immediately": true, "primary_concern": "Possible severe preeclampsia — 4 concurrent danger signs", "symptom_analysis": {"headache": {"reported": true, "value": "severity 3/3, >2 days", "baseline_deviation": "critical"}, "vision_disturbance": {"reported": true, "value": "seeing spots", "baseline_deviation": "critical"}, "swelling": {"reported": true, "value": "face and hands", "baseline_deviation": "critical"}, "abdominal_pain": {"reported": true, "value": "upper belly pain", "baseline_deviation": "critical"}}}',
-    '["Transport patient to Stanton Territorial Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
+    '["Transport patient to Kisumu County Referral Hospital immediately", "Administer magnesium sulfate 4g IV if within CHW scope", "Keep patient lying on left side during transport"]',
     '["Blood pressure not available via SMS"]',
     'severe headache persistent visual disturbance photopsia facial hand edema preeclampsia epigastric pain third trimester primigravida',
     '["figo_hd_2019_003", "who_pe_2011_007"]',

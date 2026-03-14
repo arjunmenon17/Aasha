@@ -264,3 +264,21 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Risk route map: selected point on map (from list or click) */
+.aasha-marker-selected {
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.4));
+}
+
+/* Risk route map: outline ring pulse around point markers (dot stays solid) */
+.aasha-marker-ring-pulse {
+  animation: aasha-marker-ring-pulse 1.5s ease-in-out infinite;
+}
+@keyframes aasha-marker-ring-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.08;
+  }
+}
