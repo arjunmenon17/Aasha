@@ -79,7 +79,7 @@ export function Login({ onEnter }: LoginProps) {
   const aboutRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const ORB_COLORS = ['#fda4af', '#fb7185', '#f9a8d4', '#fecdd3', '#fbcfe8'];
+  const ORB_COLORS = ['#fde4e8', '#fecaca', '#fce7f3', '#fef2f4', '#fdf2f8'];
   const [orbs, setOrbs] = useState<
     { id: number; left: number; top: number; size: number; color: string; delay: number }[]
   >(() => {

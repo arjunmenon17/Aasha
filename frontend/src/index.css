@@ -123,14 +123,14 @@ body {
 }
 .app-soft-orb-a {
   left: -8%;
-  top: -12%;
+  top: 50%;
   width: 320px;
   height: 320px;
   background: #fecdd3;
 }
 .app-soft-orb-b {
   right: -10%;
-  top: 20%;
+  top: 65%;
   width: 280px;
   height: 280px;
   background: #fbcfe8;
