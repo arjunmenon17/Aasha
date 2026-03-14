@@ -72,7 +72,7 @@ export function App() {
                 AASHA
               </h1>
               <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
-                Obstetric Monitoring for Clinicians
+                Monitoring Pregnancies Beyond the Clinic
               </div>
             </div>
           </div>
