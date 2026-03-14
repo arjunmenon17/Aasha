@@ -57,53 +57,53 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden app-shell-bg">
+    <div className="min-h-screen relative overflow-hidden app-shell-bg flex flex-col">
       <FloralBackdrop />
-      <div className="max-w-6xl mx-auto px-4 py-6 relative z-10">
-        <header className="flex items-center justify-between mb-6 rounded-2xl border border-white/70 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <img
-              src="/aasha.png"
-              alt="Aasha"
-              className="h-10 w-auto object-contain drop-shadow-sm"
-            />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-[0.16em] uppercase text-slate-900">
-                AASHA
-              </h1>
-              <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
-                Monitoring Pregnancies Beyond the Clinic
-              </div>
+      <header className="flex items-center justify-between w-full border-b border-slate-200/80 bg-white/85 backdrop-blur-sm px-4 sm:px-6 py-3 shadow-sm relative z-10 shrink-0">
+        <div className="flex items-center gap-3">
+          <img
+            src="/aasha.png"
+            alt="Aasha"
+            className="h-10 w-auto object-contain drop-shadow-sm"
+          />
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-[0.16em] uppercase text-slate-900">
+              AASHA
+            </h1>
+            <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
+              Monitoring Pregnancies Beyond the Clinic
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="flex items-center gap-2 justify-end">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    connected ? 'bg-green-500 pulse-ring' : 'bg-red-500'
-                  }`}
-                />
-                <span className="text-xs text-slate-500">
-                  {connected ? 'Live' : 'Disconnected'}
-                </span>
-              </div>
-              {lastRefresh && (
-                <div className="text-xs text-slate-400">
-                  Updated {lastRefresh.toLocaleTimeString()}
-                </div>
-              )}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="flex items-center gap-2 justify-end">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  connected ? 'bg-green-500 pulse-ring' : 'bg-red-500'
+                }`}
+              />
+              <span className="text-xs text-slate-500">
+                {connected ? 'Live' : 'Disconnected'}
+              </span>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="text-xs px-3 py-1.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
-            >
-              Logout
-            </button>
+            {lastRefresh && (
+              <div className="text-xs text-slate-400">
+                Updated {lastRefresh.toLocaleTimeString()}
+              </div>
+            )}
           </div>
-        </header>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-sm font-medium px-3 py-1.5 rounded-full text-slate-800 hover:bg-slate-200"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
 
+      <div className="max-w-6xl mx-auto px-4 py-6 relative z-10 w-full flex-1 min-h-0">
         {selectedPatient ? (
           <PatientDetailPage
             patientId={selectedPatient}
