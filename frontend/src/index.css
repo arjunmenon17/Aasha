@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+/* Login page: orbs move toward top-right, always at least one visible */
+.login-orb {
+  animation: login-orb-drift 28s linear infinite;
+}
+@keyframes login-orb-drift {
+  /* Very slow fade in at start */
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+  3% {
+    opacity: 0.32;
+    transform: translate(calc(-50% + 2vw), calc(-50% - 1vh)) scale(0.985);
+  }
+  12% {
+    opacity: 0.4;
+    transform: translate(calc(-50% + 8vw), calc(-50% - 6vh)) scale(0.995);
+  }
+  30% {
+    opacity: 0.38;
+    transform: translate(calc(-50% + 20vw), calc(-50% - 16vh)) scale(1);
+  }
+  /* Hold visible while moving toward top-right corner */
+  70% {
+    opacity: 0.42;
+    transform: translate(calc(-50% + 55vw), calc(-50% - 40vh)) scale(1);
+  }
+  90% {
+    opacity: 0.26;
+    transform: translate(calc(-50% + 82vw), calc(-50% - 60vh)) scale(1);
+  }
+  /* Only fade out once it's going off the top-right */
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + 105vw), calc(-50% - 78vh)) scale(1);
+  }
+}
+
+/* Login page: flower bloom then disappear */
+.flower-bloom {
+  animation: flower-bloom-fade 5s ease-out forwards;
+  z-index: 1;
+}
+/* Line-drawing animation for flower strokes */
+.flower-line {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: flower-line-draw 2.5s ease-out forwards;
+}
+@keyframes flower-line-draw {
+  0% {
+    stroke-dashoffset: 120;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes flower-bloom-fade {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* Dashboard: 3D-style graph shell */
+.graph-3d-shell {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  transition: transform 260ms ease, box-shadow 260ms ease;
+}
+.graph-3d-shell > div {
+  transform-origin: center;
+  transition: transform 260ms ease;
+}
+.graph-3d-shell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+}
+.graph-3d-shell:hover > div {
+  transform: rotateX(14deg) rotateY(-10deg) translateZ(12px);
+}
+
+/* 3D risk graph alert pulse */
+.alert-pulse {
+  animation: alert-pulse-ring 1.7s ease-out infinite;
+}
+@keyframes alert-pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.35;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+/* Dashboard: interactive 3D severity graph */
+.severity-3d-wrapper {
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+.severity-3d-stage {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.5rem 0.25rem;
+  transform: rotateX(58deg) rotateZ(-45deg);
+  transform-origin: center;
+}
+.severity-3d-column {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: inherit;
+}
+.severity-3d-bar {
+  position: relative;
+  width: 32px;
+  height: var(--bar-height, 80px);
+  transform-style: preserve-3d;
+}
+.severity-3d-bar-top,
+.severity-3d-bar-front,
+.severity-3d-bar-side {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+}
+.severity-3d-bar-top {
+  background: linear-gradient(135deg, #fb7185, #fecaca);
+  transform: translateZ(16px);
+}
+.severity-3d-bar-front {
+  background: linear-gradient(to bottom, #fecaca, #f97373);
+  transform-origin: bottom;
+  transform: rotateX(-90deg);
+}
+.severity-3d-bar-side {
+  width: 16px;
+  right: -8px;
+  left: auto;
+  background: linear-gradient(to bottom, #fda4af, #fb7185);
+  transform-origin: left;
+  transform: rotateY(90deg);
+}
+.severity-3d-column--active .severity-3d-bar-top,
+.severity-3d-column--active .severity-3d-bar-front,
+.severity-3d-column--active .severity-3d-bar-side {
+  box-shadow: 0 0 16px rgba(248, 113, 113, 0.6);
+}
