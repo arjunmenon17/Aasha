@@ -183,10 +183,6 @@ export function PatientDetail({
                   CHW Acknowledged:{' '}
                   {escalation.chw_acknowledged_at ? 'Yes' : 'Pending'}
                 </div>
-                <div>
-                  Transport:{' '}
-                  {escalation.transport_confirmed_at ? 'Confirmed' : 'Pending'}
-                </div>
                 <div>Follow-ups: {escalation.follow_up_count}</div>
                 <div>Created: {timeAgo(escalation.created_at)}</div>
               </div>

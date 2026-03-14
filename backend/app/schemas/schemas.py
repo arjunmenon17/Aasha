@@ -13,7 +13,7 @@ class PatientCreate(BaseModel):
     status: str = "pregnant"
     risk_factors: dict | None = None
     chw_id: UUID | None = None
-    zone_id: UUID | None = None
+    health_zone_id: UUID | None = None
     facility_id: UUID | None = None
 
 
@@ -33,8 +33,12 @@ class PatientResponse(BaseModel):
     location_lat: float | None = None
     location_lng: float | None = None
     chw_id: UUID | None
+    health_zone_id: UUID | None = None
     consecutive_misses: int
     delivery_date: datetime | None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     created_at: datetime
     updated_at: datetime
 

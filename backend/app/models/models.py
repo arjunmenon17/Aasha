@@ -37,12 +37,11 @@ class HealthZone(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUIDType(), primary_key=True, default=gen_uuid)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    region: Mapped[str] = mapped_column(String(200), nullable=False)
+    region: Mapped[str] = mapped_column(String(200), nullable=False)  # Area code, e.g. "L6Y"
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     chws: Mapped[list["CommunityHealthWorker"]] = relationship(back_populates="zone")
     facilities: Mapped[list["HealthFacility"]] = relationship(back_populates="zone")
-    transport_resources: Mapped[list["TransportResource"]] = relationship(back_populates="zone")
 
 
 class CommunityHealthWorker(Base):
@@ -52,7 +51,6 @@ class CommunityHealthWorker(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=False)
     zone_id: Mapped[uuid.UUID] = mapped_column(UUIDType(), ForeignKey("health_zones.id"), nullable=True)
-    skills: Mapped[dict | None] = mapped_column(JSON, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -74,21 +72,6 @@ class HealthFacility(Base):
     zone: Mapped[HealthZone | None] = relationship(back_populates="facilities")
 
 
-class TransportResource(Base):
-    __tablename__ = "transport_resources"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUIDType(), primary_key=True, default=gen_uuid)
-    zone_id: Mapped[uuid.UUID] = mapped_column(UUIDType(), ForeignKey("health_zones.id"), nullable=True)
-    contact_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    phone_number: Mapped[str] = mapped_column(String(20), nullable=False)
-    resource_type: Mapped[str] = mapped_column(String(100), nullable=False)  # ambulance, motorcycle, vehicle
-    reliability_score: Mapped[float] = mapped_column(Float, default=1.0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
-    zone: Mapped[HealthZone | None] = relationship(back_populates="transport_resources")
-
-
 class Patient(Base):
     __tablename__ = "patients"
 
@@ -104,10 +87,13 @@ class Patient(Base):
     baseline: Mapped[dict | None] = mapped_column(JSON, default=None)
     risk_factors: Mapped[dict | None] = mapped_column(JSON, default=None)
     chw_id: Mapped[uuid.UUID | None] = mapped_column(UUIDType(), ForeignKey("community_health_workers.id"), nullable=True)
-    zone_id: Mapped[uuid.UUID | None] = mapped_column(UUIDType(), ForeignKey("health_zones.id"), nullable=True)
+    health_zone_id: Mapped[uuid.UUID | None] = mapped_column(UUIDType(), ForeignKey("health_zones.id"), nullable=True)
     facility_id: Mapped[uuid.UUID | None] = mapped_column(UUIDType(), ForeignKey("health_facilities.id"), nullable=True)
     delivery_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     consecutive_misses: Mapped[int] = mapped_column(Integer, default=0)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

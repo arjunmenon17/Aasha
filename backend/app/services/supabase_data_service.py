@@ -123,6 +123,7 @@ def _normalize_patient(raw: dict) -> dict:
     p.setdefault("estimated_due_date", None)
     p.setdefault("delivery_date", None)
     p.setdefault("chw_id", None)
+    p.setdefault("health_zone_id", p.get("zone_id"))
     p.setdefault("consecutive_misses", 0)
     p.setdefault("check_in_frequency", "standard")
     p.setdefault("baseline", {})

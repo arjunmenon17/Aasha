@@ -1,8 +1,9 @@
 """
 Component 4: Escalation Engine
 
-Risk tier-based dispatch with simultaneous SMS, APScheduler follow-up loops,
-and inbound SMS reply routing for CHW/transport acknowledgments.
+Risk tier-based dispatch with simultaneous SMS (patient + CHW + facility),
+APScheduler follow-up loops, and inbound SMS reply routing for CHW acknowledgments.
+Transport is omitted in this app.
 """
 import asyncio
 import logging
@@ -14,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session
 from app.models.models import (
-    Patient, CommunityHealthWorker, TransportResource,
+    Patient, CommunityHealthWorker,
     HealthFacility, EscalationEvent
 )
 from app.services.sms_service import send_sms
@@ -110,19 +111,18 @@ async def tier_3_escalation(
     concern: str,
     db: AsyncSession,
 ):
-    """Tier 3: Full emergency — simultaneous SMS to patient, CHW, transport, facility."""
+    """Tier 3: Full emergency — simultaneous SMS to patient, CHW, and facility (no transport)."""
     days_since = (datetime.now(timezone.utc) - patient.enrollment_date).days
     ga_weeks = (patient.gestational_age_at_enrollment + days_since) // 7
 
-    # Get contacts
+    # Get contacts (no transport in this app)
     chw = await get_patient_chw(patient, db)
-    transport = await get_transport_resource(patient, db)
     facility = await get_facility(patient, db)
 
     # Build messages
     patient_msg = (
         f"{patient.name}, our system has detected a health concern that needs immediate attention. "
-        f"Your health worker has been notified and transport is being arranged. "
+        f"Your health worker has been notified. "
         f"Please stay calm and prepare to go to the health facility. "
         f"Do NOT ignore this message."
     )
@@ -137,22 +137,12 @@ async def tier_3_escalation(
             f"Reply RESPONDING to acknowledge."
         )
 
-    transport_msg = ""
-    if transport:
-        transport_msg = (
-            f"[AASHA TRANSPORT REQUEST]\n"
-            f"Patient: {patient.name}\n"
-            f"Emergency: {concern}\n"
-            f"Reply YES to confirm or NO if unavailable."
-        )
-
     facility_msg = ""
     if facility:
         facility_msg = (
             f"[AASHA INCOMING REFERRAL]\n"
             f"Patient: {patient.name} ({ga_weeks}wks)\n"
             f"Concern: {concern}\n"
-            f"ETA: Transport being arranged.\n"
             f"Please prepare for emergency admission."
         )
 
@@ -163,9 +153,6 @@ async def tier_3_escalation(
     if chw and chw_msg:
         tasks.append(send_sms(chw.phone_number, chw_msg, patient_id=patient.id, db=db))
         escalation.chw_notified_at = datetime.now(timezone.utc)
-    if transport and transport_msg:
-        tasks.append(send_sms(transport.phone_number, transport_msg, patient_id=patient.id, db=db))
-        escalation.transport_notified_at = datetime.now(timezone.utc)
     if facility and facility_msg:
         tasks.append(send_sms(facility.phone_number, facility_msg, patient_id=patient.id, db=db))
         escalation.facility_notified_at = datetime.now(timezone.utc)
@@ -240,27 +227,11 @@ async def escalation_followup(escalation_id: str):
                 )
                 await send_sms(secondary_chw.phone_number, msg, patient_id=patient.id, db=db)
 
-        # Transport not confirmed after 20 min → try next
-        if (
-            not escalation.transport_confirmed_at
-            and escalation.follow_up_count >= 2
-            and escalation.follow_up_count % 2 == 0
-        ):
-            transport = await get_transport_resource(patient, db, exclude_unconfirmed=True)
-            if transport:
-                msg = (
-                    f"[AASHA TRANSPORT REQUEST - URGENT]\n"
-                    f"Patient: {patient.name}\n"
-                    f"Emergency: {escalation.primary_concern}\n"
-                    f"Reply YES to confirm."
-                )
-                await send_sms(transport.phone_number, msg, patient_id=patient.id, db=db)
-
         await db.commit()
 
 
 async def handle_escalation_reply(from_number: str, body: str, db: AsyncSession) -> bool:
-    """Route inbound SMS replies from CHWs and transport contacts."""
+    """Route inbound SMS replies from CHWs (transport omitted in this app)."""
     body_upper = body.strip().upper()
 
     # Check if sender is a CHW
@@ -331,42 +302,6 @@ async def handle_escalation_reply(from_number: str, body: str, db: AsyncSession)
                 )
                 return True
 
-    # Check if sender is a transport contact
-    transport_result = await db.execute(
-        select(TransportResource).where(TransportResource.phone_number == from_number)
-    )
-    transport = transport_result.scalar_one_or_none()
-
-    if transport:
-        if body_upper == "YES":
-            # Find active escalation in this zone
-            esc_result = await db.execute(
-                select(EscalationEvent)
-                .where(EscalationEvent.status == "active")
-                .order_by(EscalationEvent.created_at.desc())
-                .limit(1)
-            )
-            esc = esc_result.scalar_one_or_none()
-            if esc:
-                esc.transport_confirmed_at = datetime.now(timezone.utc)
-                # Notify patient
-                patient_result = await db.execute(
-                    select(Patient).where(Patient.id == esc.patient_id)
-                )
-                patient = patient_result.scalar_one_or_none()
-                if patient:
-                    await send_sms(
-                        patient.phone_number,
-                        "Transport has been confirmed and is on the way. Please be ready.",
-                        patient_id=patient.id,
-                        db=db,
-                    )
-                return True
-
-        elif body_upper == "NO":
-            # Will be handled by follow-up loop trying next transport
-            return True
-
     return False
 
 
@@ -380,10 +315,10 @@ async def get_patient_chw(patient: Patient, db: AsyncSession) -> CommunityHealth
         return result.scalar_one_or_none()
 
     # Fall back to any active CHW in the zone
-    if patient.zone_id:
+    if patient.health_zone_id:
         result = await db.execute(
             select(CommunityHealthWorker).where(
-                CommunityHealthWorker.zone_id == patient.zone_id,
+                CommunityHealthWorker.zone_id == patient.health_zone_id,
                 CommunityHealthWorker.is_active == True,
             ).limit(1)
         )
@@ -407,20 +342,6 @@ async def get_secondary_chw(patient: Patient, db: AsyncSession) -> CommunityHeal
     return result.scalar_one_or_none()
 
 
-async def get_transport_resource(
-    patient: Patient, db: AsyncSession, exclude_unconfirmed: bool = False
-) -> TransportResource | None:
-    query = select(TransportResource).where(
-        TransportResource.is_active == True
-    ).order_by(TransportResource.reliability_score.desc())
-
-    if patient.zone_id:
-        query = query.where(TransportResource.zone_id == patient.zone_id)
-
-    result = await db.execute(query.limit(1))
-    return result.scalar_one_or_none()
-
-
 async def get_facility(patient: Patient, db: AsyncSession) -> HealthFacility | None:
     if patient.facility_id:
         result = await db.execute(
@@ -430,8 +351,8 @@ async def get_facility(patient: Patient, db: AsyncSession) -> HealthFacility | N
 
     # Fall back to highest-level facility in zone
     query = select(HealthFacility)
-    if patient.zone_id:
-        query = query.where(HealthFacility.zone_id == patient.zone_id)
+    if patient.health_zone_id:
+        query = query.where(HealthFacility.zone_id == patient.health_zone_id)
     query = query.order_by(HealthFacility.facility_level.desc()).limit(1)
 
     result = await db.execute(query)
