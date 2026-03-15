@@ -1,4 +1,27 @@
 const API_BASE = '';
+const AUTH_TOKEN_KEY = 'aasha.authToken';
+
+let inMemoryToken: string | null = null;
+
+function getStoredToken(): string | null {
+  if (inMemoryToken) return inMemoryToken;
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function getAuthToken(): string | null {
+  return getStoredToken();
+}
+
+export function setAuthToken(token: string | null) {
+  inMemoryToken = token;
+  if (typeof window === 'undefined') return;
+  if (!token) {
+    window.localStorage.removeItem(AUTH_TOKEN_KEY);
+    return;
+  }
+  window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
 
 async function request<T>(
   path: string,
@@ -9,6 +32,7 @@ async function request<T>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(getStoredToken() ? { Authorization: `Bearer ${getStoredToken()}` } : {}),
       ...options?.headers,
     },
   });

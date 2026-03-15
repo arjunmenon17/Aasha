@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = ""   # optional: direct PostgreSQL; if blank, uses Supabase REST
     SUPABASE_URL: str = ""
     SUPABASE_PUBLISHABLE_KEY: str = ""
+    SUPABASE_ANON_KEY: str = ""
 
     # Moorcheh AI
     MOORCHEH_API_KEY: str = ""
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://localhost:8000"
     CHW_DEFAULT_ID: str = ""
     DEMO_MODE: bool = True
+    AUTH_SECRET_KEY: str = "change-this-in-production"
 
     # Moorcheh namespace
     MOORCHEH_NAMESPACE: str = "aasha-clinical-protocols"

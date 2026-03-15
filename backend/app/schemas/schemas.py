@@ -133,3 +133,22 @@ class DashboardResponse(BaseModel):
 class EnrollResponse(BaseModel):
     patient: PatientResponse
     message: str
+
+
+# --- Auth ---
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class AuthUserResponse(BaseModel):
+    id: UUID
+    username: str
+    display_name: str
+    role: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: AuthUserResponse
