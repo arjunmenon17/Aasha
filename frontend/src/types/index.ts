@@ -12,3 +12,7 @@ export type {
   FamilyHistory,
   PatientEnrollRequest,
 } from './patient';
+export type {
+  AuthUser,
+  LoginResponse,
+} from './auth';

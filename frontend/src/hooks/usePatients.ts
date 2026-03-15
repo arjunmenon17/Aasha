@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { patientsApi } from '@/api';
 import type { PatientsResponse } from '@/types';
 
-export function usePatients(pollIntervalMs = 30_000) {
+export function usePatients(pollIntervalMs = 30_000, enabled = true) {
   const [data, setData] = useState<PatientsResponse | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [connected, setConnected] = useState(true);
@@ -24,10 +24,11 @@ export function usePatients(pollIntervalMs = 30_000) {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     fetchPatients();
     const interval = setInterval(fetchPatients, pollIntervalMs);
     return () => clearInterval(interval);
-  }, [fetchPatients, pollIntervalMs]);
+  }, [fetchPatients, pollIntervalMs, enabled]);
 
   return { data, lastRefresh, connected, error, refetch: fetchPatients };
 }
