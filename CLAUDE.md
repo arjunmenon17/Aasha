@@ -27,7 +27,7 @@ Aasha monitors pregnant and postpartum women in low-resource settings via SMS �
 | Free-text classification LLM | `claude-haiku-4-5` |
 | SMS | Twilio SMS API |
 | Task scheduler | APScheduler (`AsyncIOScheduler`) |
-| Frontend | React 18 + TypeScript + Tailwind CSS (CDN) |
+| Frontend | React 18 + TypeScript + Tailwind CSS (npm + PostCSS, Vite) |
 | Charts | Recharts |
 | ORM | SQLAlchemy async + asyncpg |
 | Local tunnel | ngrok (static subdomain) |
@@ -395,26 +395,46 @@ Filters only work if metadata was included when uploading documents. Use consist
 
 ## Component 5: CHW Dashboard
 
-React SPA at `/dashboard`. Mobile-first, high-contrast, polled updates every 30s. Designed for Android smartphones in poor lighting.
+React SPA built with Vite. Light theme, polled updates every 30s. Designed for usability on mobile and desktop.
+
+### Authentication
+
+CHWs log in via username/password at `/login`. Token stored in memory. `GET /api/auth/me` validates the session on page load; 401 responses auto-logout. The `/login` route also serves as the public-facing marketing landing page (hero + About carousel).
 
 ### Design Tokens
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `tier-3` | `#DC2626` | Red — Emergency |
-| `tier-2` | `#EA580C` | Orange — Concern |
-| `tier-1` | `#CA8A04` | Amber — Watch |
-| `tier-0` | `#16A34A` | Green — Normal |
-| `background` | `#0F172A` | Dark navy |
-| `surface` | `#1E293B` | Card surfaces |
-| `text-primary` | `#F1F5F9` | Primary text |
-| `accent` | `#3B82F6` | Interactive elements |
+The actual implemented UI uses a **light theme** with warm pink/rose accents — not the dark navy originally planned.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `tier-3` (Emergency) | `bg-rose-600` / `#e11d48` | Tier badge, accent bar, initials avatar |
+| `tier-2` (Concern) | `bg-orange-500` / `#f97316` | Tier badge, accent bar |
+| `tier-1` (Watch) | `bg-amber-500` / `#f59e0b` | Tier badge, accent bar |
+| `tier-0` (Normal) | `bg-teal-500` / `#14b8a6` | Tier badge, accent bar |
+| Primary accent | `#B85050` | Buttons, checkboxes, focus rings, section badges |
+| Hero background | `#fff2f8` | Login hero section background |
+| App background | `bg-white` + `FloralBackdrop` | Dashboard shell |
+| Card surface | `bg-white` with `border-slate-200` | Patient cards, summary cards |
+| Text primary | `text-slate-900` | Headings, names |
+| Text secondary | `text-slate-500` | Labels, subtitles |
+
+Tier constants live in `frontend/src/constants/tiers.ts` and export: `TIER_BG`, `TIER_BADGE` (soft tint pill), `TIER_TEXT`, `TIER_BORDER` (`border-l-*`), `TIER_CARD_BG`, `TIER_NAMES`.
+
+### Frontend npm Package
+
+`webgl-fluid-enhanced` — WebGL fluid simulation used on the login hero background. Responds to cursor/touch movement with soft pink trailing fluid effect. Installed via `npm install webgl-fluid-enhanced`.
 
 ### Views
 
-**Patient List:** Header (app name, CHW name, last refresh, live status), tier summary cards, patient list sorted by tier descending then gestational age. Each row: tier badge, name, gestational age, primary concern, last check-in status.
+**Landing Page (`/` and `/about`):** Hero section with animated orbs, Flower SVGs, cursor parallax, and WebGL fluid background. Subtitle: "Equal Care for All". Login and Join Us buttons. About section is a 3-stop carousel (Problem → Solution → Mission). Join Us opens a contact modal.
+
+**Login Form (`/login`):** Username/password form with same orb/flower animation background (no fluid). Calls `POST /api/auth/login`, stores returned `access_token`.
+
+**Patient List (`/dashboard`):** Glass-morphism header (logo, live/disconnected status badge, last-refresh time, Enroll Patient button, Logout). Tier summary cards (tinted cards with left accent border). Patient card grid (2 columns on desktop): colored left accent bar, initials avatar, tier badge, name, gestational age, missed check-in indicator. Sorted by tier descending then gestational age.
 
 **Patient Detail:** Clinical assessment card (primary concern, reasoning, recommended actions, protocol references, uncertainty flags), Recharts symptom timeline (headache severity + wellbeing score), last 5 check-ins, quick action buttons (Log BP Reading, Mark Visited, Resolve Escalation), patient info (enrollment data, risk factors, care team contacts).
+
+**Enrollment Form:** Accessible via "Enroll Patient" button in the header. 4-section card layout: (1) Patient Details — name, phone, address; (2) Pregnancy Information — gestational age, status (pregnant/postpartum), estimated due date; (3) Personal Risk Factors — checkbox grid (primigravida, prior preeclampsia, chronic hypertension, multiple gestation, prior PPH); (4) Family History — 8 Yes/No/Unknown toggle questions + notes field. Calls `POST /api/patients/enroll`. On success, shows confirmation and returns to dashboard with a data refetch.
 
 ---
 
