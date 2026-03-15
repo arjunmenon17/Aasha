@@ -79,6 +79,7 @@ class SymptomLogResponse(BaseModel):
     patient_id: UUID
     gestational_age_days: int | None
     responses: dict
+    raw_responses: dict = {}
     created_at: datetime
 
     class Config:
