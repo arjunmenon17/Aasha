@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { PatientsResponse, PatientDetail } from '@/types';
+import type { PatientsResponse, PatientDetail, PatientEnrollRequest, Patient } from '@/types';
 
 export const patientsApi = {
   list: () => api.get<PatientsResponse>('/api/patients'),
@@ -8,4 +8,6 @@ export const patientsApi = {
     api.post<unknown>(`/api/patients/${id}/resolve`),
   triggerCheckIn: (id: string) =>
     api.post<unknown>(`/api/check-in/${id}`),
+  enroll: (data: PatientEnrollRequest) =>
+    api.post<{ patient: Patient; message: string }>('/api/patients', data),
 };
