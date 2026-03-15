@@ -267,7 +267,7 @@ async def get_patient_detail(patient_id: UUID) -> dict | None:
             for row in esc_rows
             if str(row.get("status", "")).lower() == "active"
         ),
-        esc_rows[0] if esc_rows else None,
+        None,
     )
 
     latest_assessment = (

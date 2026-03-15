@@ -4,7 +4,7 @@ Conversation question trees for pregnancy and postpartum check-ins.
 Each node has:
   - message: SMS text template
   - key: data key stored in conversation_data
-  - type: 'single_number' or 'multi_number'
+  - type: 'single_number', 'multi_number', or 'open_text'
   - options: valid numeric responses
   - next: function(response) -> next node key or None (complete)
 """
@@ -121,6 +121,16 @@ PREGNANCY_TREE = {
         "key": "bleeding",
         "type": "single_number",
         "options": ["1", "2", "3"],
+        "next": lambda r: "final_open_text",
+    },
+    "final_open_text": {
+        "message": (
+            "Last question: Is there anything else about your health you want to share?\n"
+            "Reply with your message, or send 0 to skip."
+        ),
+        "key": "final_note",
+        "type": "open_text",
+        "options": [],
         "next": lambda r: None,  # Complete
     },
     # Healthy shortcut — if feeling good, skip symptom details
@@ -134,7 +144,7 @@ PREGNANCY_TREE = {
         "key": "fetal_movement",
         "type": "single_number",
         "options": ["1", "2", "3"],
-        "next": lambda r: None if r == "1" else "fever",
+        "next": lambda r: "final_open_text" if r == "1" else "fever",
     },
 }
 
@@ -155,7 +165,7 @@ POSTPARTUM_TREE = {
         "key": "wellbeing",
         "type": "single_number",
         "options": ["1", "2", "3"],
-        "next": lambda r: "bleeding_pp" if r in ("2", "3") else None,
+        "next": lambda r: "bleeding_pp" if r in ("2", "3") else "final_open_text",
     },
     "bleeding_pp": {
         "message": (
@@ -227,6 +237,16 @@ POSTPARTUM_TREE = {
         "key": "baby_feeding",
         "type": "single_number",
         "options": ["1", "2", "3"],
+        "next": lambda r: "final_open_text",
+    },
+    "final_open_text": {
+        "message": (
+            "Last question: Is there anything else about your health you want to share?\n"
+            "Reply with your message, or send 0 to skip."
+        ),
+        "key": "final_note",
+        "type": "open_text",
+        "options": [],
         "next": lambda r: None,  # Complete
     },
 }

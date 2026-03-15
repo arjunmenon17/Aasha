@@ -30,6 +30,23 @@ function buildChartData(logs: SymptomLog[]): ChartPoint[] {
     }));
 }
 
+function extractPatientNote(log: SymptomLog): string | null {
+  const raw = log.raw_responses ?? {};
+  const responseNote = typeof log.responses?.final_note === 'string' ? log.responses.final_note : null;
+  const candidates = [
+    typeof raw.raw_final_note === 'string' ? raw.raw_final_note : null,
+    typeof raw.raw_unsolicited_text === 'string' ? raw.raw_unsolicited_text : null,
+    responseNote,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const text = candidate.trim();
+    if (!text || text.toLowerCase() === 'skipped') continue;
+    return text;
+  }
+  return null;
+}
+
 export function PatientDetail({
   patientId,
   detail,
@@ -63,6 +80,22 @@ export function PatientDetail({
   const logs = detail.recent_symptom_logs ?? [];
   const escalation = detail.active_escalation;
   const chartData = buildChartData(logs);
+  const recentNotes = logs
+    .map((log) => {
+      const note = extractPatientNote(log);
+      if (!note) return null;
+      return {
+        id: log.id,
+        note,
+        created_at: log.created_at,
+        source:
+          log.responses?.report_source === 'patient_unsolicited_sms'
+            ? 'Unscheduled SMS'
+            : 'Check-in note',
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .slice(0, 5);
 
   const riskFactorKeys =
     detail.risk_factors &&
@@ -250,6 +283,24 @@ export function PatientDetail({
           <div className="flex-1 min-h-0">
             <SymptomChart chartData={chartData} />
           </div>
+          {recentNotes.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Patient free-text notes
+              </h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {recentNotes.map((item) => (
+                  <div key={item.id} className="rounded-lg border border-pink-100 bg-pink-50/40 px-3 py-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                      <span>{item.source}</span>
+                      <span>{timeAgo(item.created_at)}</span>
+                    </div>
+                    <p className="text-sm text-slate-800 leading-snug">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

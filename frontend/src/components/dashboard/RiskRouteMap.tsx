@@ -488,6 +488,8 @@ export function RiskRouteMap({ patients, onSelectPatient }: RiskRouteMapProps) {
                   className={`w-full text-left rounded-lg border px-2.5 py-2 transition ${
                     selectedId === n.id
                       ? 'border-pregnancy bg-pregnancy/5 ring-1 ring-pregnancy/30'
+                      : hoveredId === n.id
+                      ? 'border-slate-300 bg-slate-50'
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
