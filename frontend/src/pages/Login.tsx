@@ -8,6 +8,8 @@ interface LoginProps {
 
 const TEXT_COLOR = '#000000'; // black
 const BUTTON_TEXT_COLOR = '#0f172a';
+const JOIN_US_EMAIL = 'hello@aasha.health';
+const JOIN_US_PHONE = '+254700111222';
 
 const MAX_FLOWERS = 12;
 const FLOWER_SPAWN_INTERVAL_MS = 2600;
@@ -125,11 +127,17 @@ export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [publicPath, setPublicPath] = useState<'/' | '/about' | '/login'>(() => {
+    if (typeof window === 'undefined') return '/';
+    if (window.location.pathname === '/about') return '/about';
+    if (window.location.pathname === '/login') return '/login';
+    return '/';
+  });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [showJoinUs, setShowJoinUs] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
   const [activeStop, setActiveStop] = useState(0);
@@ -203,16 +211,20 @@ export function Login({ onEnter }: LoginProps) {
     setCursor({ x, y });
   };
 
-  const scrollToAbout = () => {
-    if (typeof window !== 'undefined' && window.location.pathname !== '/about') {
-      window.history.pushState(null, '', '/about');
+  const setPublicRoute = (path: '/' | '/about' | '/login') => {
+    if (typeof window === 'undefined') return;
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
     }
+    setPublicPath(path);
+  };
+
+  const scrollToAbout = () => {
+    setPublicRoute('/about');
     aboutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   const scrollToTop = () => {
-    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-      window.history.pushState(null, '', '/');
-    }
+    setPublicRoute('/');
     heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -238,11 +250,19 @@ export function Login({ onEnter }: LoginProps) {
     if (typeof window === 'undefined') return;
 
     const syncSectionFromPath = () => {
-      if (window.location.pathname === '/about') {
+      const path =
+        window.location.pathname === '/about'
+          ? '/about'
+          : window.location.pathname === '/login'
+            ? '/login'
+            : '/';
+      setPublicPath(path);
+
+      if (path === '/about') {
         requestAnimationFrame(() => {
           aboutRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
         });
-      } else {
+      } else if (path === '/') {
         requestAnimationFrame(() => {
           heroRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
         });
@@ -253,6 +273,153 @@ export function Login({ onEnter }: LoginProps) {
     window.addEventListener('popstate', syncSectionFromPath);
     return () => window.removeEventListener('popstate', syncSectionFromPath);
   }, []);
+
+  if (publicPath === '/login') {
+    return (
+      <div
+        className="h-screen overflow-hidden bg-white relative"
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
+        <div
+          className="absolute pointer-events-none overflow-hidden -top-[45%] -left-[20%] -right-[20%] -bottom-[20%]"
+          style={{
+            transform: `translate3d(${orbsShiftX}px, ${orbsShiftY}px, 0)`,
+          }}
+        >
+          {orbs.map((orb) => {
+            const p = hovering
+              ? repelPoint(orb.left, orb.top, cursor.x, cursor.y, repelRadius, repelStrength)
+              : { left: orb.left, top: orb.top };
+            return (
+              <div
+                key={orb.id}
+                className="login-orb absolute rounded-full blur-3xl"
+                style={{
+                  left: `${p.left}%`,
+                  top: `${p.top}%`,
+                  width: orb.size,
+                  height: orb.size,
+                  backgroundColor: orb.color,
+                  animationDelay: `${orb.delay}ms`,
+                  transition: 'left 90ms ease-out, top 90ms ease-out',
+                }}
+              />
+            );
+          })}
+          {flowers.map((f) => {
+            const p = hovering
+              ? repelPoint(f.left, f.top, cursor.x, cursor.y, repelRadius, repelStrength + 4)
+              : { left: f.left, top: f.top };
+            return <Flower key={f.id} left={p.left} top={p.top} size={f.size} />;
+          })}
+        </div>
+
+        <div className="relative z-10 h-full flex items-center justify-center px-4">
+          <button
+            type="button"
+            onClick={() => setShowJoinUs(true)}
+            className="absolute top-6 right-6 text-xs sm:text-sm font-medium px-4 py-2 rounded-full border border-slate-300/90 bg-white/85 text-slate-700 hover:bg-white transition"
+          >
+            Join Us
+          </button>
+          <form
+            onSubmit={handleLoginSubmit}
+            className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm p-6 shadow-xl"
+          >
+            <img src="/aasha.png" alt="Aasha" className="h-14 w-auto object-contain mb-3 mx-auto" />
+            <h2 className="text-2xl font-semibold text-slate-900 text-center" style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}>
+              Sign in
+            </h2>
+            <p className="text-sm text-slate-500 mt-1 text-center">Enter your dashboard credentials</p>
+
+            <label className="block mt-5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-pregnancy/30"
+              autoComplete="username"
+              autoFocus
+            />
+
+            <label className="block mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-pregnancy/30"
+              autoComplete="current-password"
+            />
+
+            {authError && (
+              <div className="mt-3 text-sm text-red-600">{authError}</div>
+            )}
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="mt-4 w-full px-4 py-2.5 text-sm rounded-lg bg-pregnancy text-white hover:bg-pregnancy-dark disabled:opacity-60"
+            >
+              {authLoading ? 'Signing in...' : 'Sign in'}
+            </button>
+
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="mt-3 w-full text-sm text-slate-600 hover:text-slate-900"
+            >
+              Back to Home
+            </button>
+          </form>
+        </div>
+
+        {showJoinUs && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div className="absolute inset-0 bg-black/35" onClick={() => setShowJoinUs(false)} aria-hidden />
+            <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}>
+                Join Aasha
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                Because Aasha handles sensitive maternal health information, onboarding requires a brief application and
+                verification process with our team.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Contact us to start your application:
+              </p>
+              <div className="mt-4 space-y-2">
+                <a
+                  href={`mailto:${JOIN_US_EMAIL}`}
+                  className="block rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50"
+                >
+                  Email: {JOIN_US_EMAIL}
+                </a>
+                <a
+                  href={`tel:${JOIN_US_PHONE}`}
+                  className="block rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50"
+                >
+                  Call: {JOIN_US_PHONE}
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinUs(false)}
+                className="mt-5 w-full rounded-lg bg-pregnancy text-white py-2.5 text-sm font-medium hover:bg-pregnancy-dark transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -330,7 +497,7 @@ export function Login({ onEnter }: LoginProps) {
 
           <button
             type="button"
-            onClick={() => setShowLoginForm(true)}
+            onClick={() => setPublicRoute('/login')}
             className="relative z-10 px-10 py-3.5 rounded-xl bg-white border border-pregnancy font-medium text-sm tracking-wide hover:bg-pregnancy/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#B85050]/15"
             style={{
               fontFamily: 'Outfit, system-ui, sans-serif',
@@ -339,6 +506,15 @@ export function Login({ onEnter }: LoginProps) {
             }}
           >
             Login
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowJoinUs(true)}
+            className="relative z-10 mt-3 px-8 py-2.5 rounded-xl bg-white/85 border border-slate-300 text-slate-700 text-sm font-medium tracking-wide hover:bg-white transition-all duration-200"
+            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+          >
+            Join Us
           </button>
 
           <button
@@ -356,68 +532,6 @@ export function Login({ onEnter }: LoginProps) {
           </button>
         </div>
 
-        {showLoginForm && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center px-4">
-            <div
-              className="absolute inset-0 bg-black/30"
-              onClick={() => setShowLoginForm(false)}
-              aria-hidden
-            />
-            <form
-              onSubmit={handleLoginSubmit}
-              className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm p-5 shadow-xl"
-            >
-              <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}>
-                Sign in
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">Use your dashboard credentials</p>
-
-              <label className="block mt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-pregnancy/30"
-                autoComplete="username"
-                autoFocus
-              />
-
-              <label className="block mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-pregnancy/30"
-                autoComplete="current-password"
-              />
-
-              {authError && (
-                <div className="mt-3 text-sm text-red-600">{authError}</div>
-              )}
-
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowLoginForm(false)}
-                  className="px-3 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="px-4 py-2 text-sm rounded-lg bg-pregnancy text-white hover:bg-pregnancy-dark disabled:opacity-60"
-                >
-                  {authLoading ? 'Signing in...' : 'Sign in'}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
       </section>
 
       {/* Section 2: About page — one-screen horizontal trail */}
@@ -568,6 +682,45 @@ export function Login({ onEnter }: LoginProps) {
           </button>
         </div>
       </section>
+
+      {showJoinUs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/35" onClick={() => setShowJoinUs(false)} aria-hidden />
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}>
+              Join Aasha
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
+              Because Aasha handles sensitive maternal health information, onboarding requires a brief application and
+              verification process with our team.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Contact us to start your application:
+            </p>
+            <div className="mt-4 space-y-2">
+              <a
+                href={`mailto:${JOIN_US_EMAIL}`}
+                className="block rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50"
+              >
+                Email: {JOIN_US_EMAIL}
+              </a>
+              <a
+                href={`tel:${JOIN_US_PHONE}`}
+                className="block rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50"
+              >
+                Call: {JOIN_US_PHONE}
+              </a>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowJoinUs(false)}
+              className="mt-5 w-full rounded-lg bg-pregnancy text-white py-2.5 text-sm font-medium hover:bg-pregnancy-dark transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

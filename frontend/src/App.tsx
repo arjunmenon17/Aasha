@@ -66,7 +66,7 @@ export function App() {
   }, [entered, error]);
 
   // Keep URL path in sync with auth state so endpoints differ:
-  // / or /about for public screen, /dashboard for main app.
+  // /, /about, /login for public screen, /dashboard for main app.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (entered) {
@@ -76,7 +76,11 @@ export function App() {
       return;
     }
     // Keep public routes stable; default unknown routes to home.
-    if (window.location.pathname !== '/' && window.location.pathname !== '/about') {
+    if (
+      window.location.pathname !== '/' &&
+      window.location.pathname !== '/about' &&
+      window.location.pathname !== '/login'
+    ) {
       window.history.replaceState(null, '', '/');
     }
   }, [entered]);
