@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS patients CASCADE;
 DROP TABLE IF EXISTS health_facilities CASCADE;
 DROP TABLE IF EXISTS community_health_workers CASCADE;
 DROP TABLE IF EXISTS health_zones CASCADE;
+DROP TABLE IF EXISTS dashboard_users CASCADE;
 
 -- =============================================================================
 -- TABLES (order respects foreign keys)
@@ -459,6 +460,86 @@ INSERT INTO patients (
     'Upper Nyakach, remote',
     -0.3750,
     34.7520
+),
+(
+    'd4000000-0000-4000-8000-00000000000f',
+    'Janet Okoth',
+    '+254711015015',
+    154,
+    now() - interval '32 days',
+    now() + interval '126 days',
+    'pregnant',
+    1,
+    'standard',
+    '{"headache_history": [1, 1, 2, 1], "headache_frequency": 0.25, "typical_swelling_location": "1", "wellbeing_scores": [1, 2, 2, 1], "response_rate": 0.9, "checkins_completed": 4, "baseline_established": true}',
+    '{"age_over_35": false}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Koru East, Nyakach',
+    -0.3290,
+    34.7740
+),
+(
+    'd4000000-0000-4000-8000-000000000010',
+    'Halima Noor',
+    '+254711016016',
+    232,
+    now() - interval '22 days',
+    now() + interval '20 days',
+    'pregnant',
+    2,
+    'daily',
+    '{"headache_history": [1, 2, 2, 2, 3], "headache_frequency": 0.7, "typical_swelling_location": "2", "wellbeing_scores": [2, 2, 2, 3], "response_rate": 0.88, "checkins_completed": 6, "baseline_established": true}',
+    '{"prior_preeclampsia": true}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    NULL,
+    'Koru West, Nyakach',
+    -0.3340,
+    34.7810
+),
+(
+    'd4000000-0000-4000-8000-000000000011',
+    'Lucy Wairimu',
+    '+254711017017',
+    266,
+    now() - interval '18 days',
+    now() - interval '6 days',
+    'postpartum',
+    1,
+    'daily',
+    '{"headache_history": [1, 1, 1, 2], "headache_frequency": 0.2, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 2, 2], "response_rate": 0.92, "checkins_completed": 9, "baseline_established": true}',
+    '{"prior_pph": false}',
+    'b2000000-0000-4000-8000-000000000002',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    now() - interval '6 days',
+    'Kajulu Border, Nyakach',
+    -0.3370,
+    34.7690
+),
+(
+    'd4000000-0000-4000-8000-000000000012',
+    'Naomi Atieno',
+    '+254711018018',
+    118,
+    now() - interval '27 days',
+    now() + interval '162 days',
+    'pregnant',
+    0,
+    'standard',
+    '{"headache_history": [1, 1, 1], "headache_frequency": 0.0, "typical_swelling_location": null, "wellbeing_scores": [1, 1, 1], "response_rate": 1.0, "checkins_completed": 3, "baseline_established": false}',
+    '{"primigravida": true}',
+    'b2000000-0000-4000-8000-000000000001',
+    'a1000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000002',
+    NULL,
+    'Miwani Outskirts, Nyakach',
+    -0.3710,
+    34.7460
 );
 
 -- Clinical assessments (Amina Tier 3, Fatima Tier 2)
@@ -526,3 +607,66 @@ INSERT INTO escalation_events (
     2,
     now() - interval '1 hour'
 );
+
+-- -----------------------------------------------------------------------------
+-- Dashboard authentication users
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS dashboard_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT UNIQUE NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'chw',
+    chw_id UUID REFERENCES community_health_workers(id),
+    password_hash TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_dashboard_users_username ON dashboard_users(username);
+CREATE INDEX IF NOT EXISTS idx_dashboard_users_chw_id ON dashboard_users(chw_id);
+
+-- Demo login users:
+-- admin/admin123 (all patients)
+-- grace.wanjiku/grace123 (patients assigned to Grace)
+-- mary.akinyi/mary123 (patients assigned to Mary)
+INSERT INTO dashboard_users (
+    id, username, display_name, role, chw_id, password_hash, is_active, created_at, updated_at
+) VALUES (
+    'd9100000-0000-4000-8000-000000000001',
+    'admin',
+    'Aasha Admin',
+    'admin',
+    NULL,
+    'pbkdf2_sha256$120000$aasha_demo_salt$DXXWwUDlmRX0mOWElBjg-ih55KYeM7NviIGuXrF5v7M',
+    true,
+    now(),
+    now()
+), (
+    'd9100000-0000-4000-8000-000000000002',
+    'grace.wanjiku',
+    'Grace Wanjiku',
+    'chw',
+    'b2000000-0000-4000-8000-000000000001',
+    'pbkdf2_sha256$120000$aasha_grace_salt$bhgCmDvda6pmNWNjoTmvy1Qmutxi_yXulDofl5nH-XU',
+    true,
+    now(),
+    now()
+), (
+    'd9100000-0000-4000-8000-000000000003',
+    'mary.akinyi',
+    'Mary Akinyi',
+    'chw',
+    'b2000000-0000-4000-8000-000000000002',
+    'pbkdf2_sha256$120000$aasha_mary_salt$KCfUBYP3goSqkXHaQlEsRg4SzHroO5WdejX2dU515qM',
+    true,
+    now(),
+    now()
+)
+ON CONFLICT (username) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    role = EXCLUDED.role,
+    chw_id = EXCLUDED.chw_id,
+    password_hash = EXCLUDED.password_hash,
+    is_active = EXCLUDED.is_active,
+    updated_at = now();

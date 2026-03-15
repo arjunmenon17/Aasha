@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, type MouseEvent } from 'react';
+import { useState, useEffect, useRef, type MouseEvent, type FormEvent } from 'react';
 import { Flower } from '@/components/login/Flower';
+import { authApi } from '@/api';
 
 interface LoginProps {
-  onEnter: () => void;
+  onEnter: (accessToken: string) => void;
 }
 
 const TEXT_COLOR = '#000000'; // black
@@ -124,6 +125,11 @@ export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
   const [activeStop, setActiveStop] = useState(0);
@@ -198,11 +204,55 @@ export function Login({ onEnter }: LoginProps) {
   };
 
   const scrollToAbout = () => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/about') {
+      window.history.pushState(null, '', '/about');
+    }
     aboutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   const scrollToTop = () => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/');
+    }
     heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  const handleLoginSubmit = async (ev: FormEvent) => {
+    ev.preventDefault();
+    setAuthError(null);
+    if (!username.trim() || !password) {
+      setAuthError('Please enter username and password');
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const result = await authApi.login(username.trim(), password);
+      onEnter(result.access_token);
+    } catch {
+      setAuthError('Invalid username or password');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncSectionFromPath = () => {
+      if (window.location.pathname === '/about') {
+        requestAnimationFrame(() => {
+          aboutRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+        });
+      } else {
+        requestAnimationFrame(() => {
+          heroRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+        });
+      }
+    };
+
+    syncSectionFromPath();
+    window.addEventListener('popstate', syncSectionFromPath);
+    return () => window.removeEventListener('popstate', syncSectionFromPath);
+  }, []);
 
   return (
     <div
@@ -280,7 +330,7 @@ export function Login({ onEnter }: LoginProps) {
 
           <button
             type="button"
-            onClick={onEnter}
+            onClick={() => setShowLoginForm(true)}
             className="relative z-10 px-10 py-3.5 rounded-xl bg-white border border-pregnancy font-medium text-sm tracking-wide hover:bg-pregnancy/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#B85050]/15"
             style={{
               fontFamily: 'Outfit, system-ui, sans-serif',
@@ -305,6 +355,69 @@ export function Login({ onEnter }: LoginProps) {
             </span>
           </button>
         </div>
+
+        {showLoginForm && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center px-4">
+            <div
+              className="absolute inset-0 bg-black/30"
+              onClick={() => setShowLoginForm(false)}
+              aria-hidden
+            />
+            <form
+              onSubmit={handleLoginSubmit}
+              className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm p-5 shadow-xl"
+            >
+              <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}>
+                Sign in
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">Use your dashboard credentials</p>
+
+              <label className="block mt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-pregnancy/30"
+                autoComplete="username"
+                autoFocus
+              />
+
+              <label className="block mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-pregnancy/30"
+                autoComplete="current-password"
+              />
+
+              {authError && (
+                <div className="mt-3 text-sm text-red-600">{authError}</div>
+              )}
+
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLoginForm(false)}
+                  className="px-3 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="px-4 py-2 text-sm rounded-lg bg-pregnancy text-white hover:bg-pregnancy-dark disabled:opacity-60"
+                >
+                  {authLoading ? 'Signing in...' : 'Sign in'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </section>
 
       {/* Section 2: About page — one-screen horizontal trail */}

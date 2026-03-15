@@ -9,3 +9,7 @@ export type {
   PatientsSummary,
   PatientsResponse,
 } from './patient';
+export type {
+  AuthUser,
+  LoginResponse,
+} from './auth';

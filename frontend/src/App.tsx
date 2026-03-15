@@ -3,19 +3,18 @@ import { Login, Dashboard, PatientDetailPage } from '@/pages';
 import { usePatients } from '@/hooks';
 import { FloralBackdrop } from '@/components/ui';
 import { EnrollmentForm } from '@/components/enrollment/EnrollmentForm';
+import { authApi } from '@/api';
+import { getAuthToken, setAuthToken } from '@/api/client';
 
 export function App() {
-  const [entered, setEntered] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    // First load should default to /login. Only /dashboard opens dashboard directly.
-    if (window.location.pathname === '/dashboard') return true;
-    return false;
-  });
+  const [entered, setEntered] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [enrolling, setEnrolling] = useState(false);
-  const { data, lastRefresh, connected, error, refetch } = usePatients();
+  const { data, lastRefresh, connected, error, refetch } = usePatients(30_000, entered);
 
-  const handleEnter = () => {
+  const handleEnter = (accessToken: string) => {
+    setAuthToken(accessToken);
     setEntered(true);
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', '/dashboard');
@@ -25,20 +24,74 @@ export function App() {
   const handleLogout = () => {
     setSelectedPatient(null);
     setEntered(false);
+    setAuthToken(null);
     if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', '/login');
+      window.history.pushState(null, '', '/');
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    const token = getAuthToken();
+    if (!token) {
+      setAuthChecked(true);
+      return;
+    }
+    authApi
+      .me()
+      .then(() => {
+        if (!cancelled) setEntered(true);
+      })
+      .catch(() => {
+        setAuthToken(null);
+        if (!cancelled) setEntered(false);
+      })
+      .finally(() => {
+        if (!cancelled) setAuthChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!entered || !error) return;
+    if (error.includes('401')) {
+      setAuthToken(null);
+      setEntered(false);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '/');
+      }
+    }
+  }, [entered, error]);
+
   // Keep URL path in sync with auth state so endpoints differ:
-  // /login for login screen, /dashboard for main app.
+  // / or /about for public screen, /dashboard for main app.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const target = entered ? '/dashboard' : '/login';
-    if (window.location.pathname !== target) {
-      window.history.replaceState(null, '', target);
+    if (entered) {
+      if (window.location.pathname !== '/dashboard') {
+        window.history.replaceState(null, '', '/dashboard');
+      }
+      return;
+    }
+    // Keep public routes stable; default unknown routes to home.
+    if (window.location.pathname !== '/' && window.location.pathname !== '/about') {
+      window.history.replaceState(null, '', '/');
     }
   }, [entered]);
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen relative overflow-hidden app-shell-bg flex items-center justify-center">
+        <FloralBackdrop />
+        <div className="text-center relative z-10">
+          <div className="text-3xl font-bold mb-2 text-slate-900">Aasha</div>
+          <div className="text-slate-500">Checking session...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!entered) {
     return <Login onEnter={handleEnter} />;

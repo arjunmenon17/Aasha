@@ -208,14 +208,14 @@ def _normalize_log(raw: dict) -> dict:
     return l
 
 
-async def list_patients() -> list[dict]:
-    rows = await _get(
-        "patients",
-        {
-            "select": "*",
-            "order": "current_risk_tier.desc,gestational_age_at_enrollment.asc",
-        },
-    )
+async def list_patients(chw_id: UUID | None = None) -> list[dict]:
+    params = {
+        "select": "*",
+        "order": "current_risk_tier.desc,gestational_age_at_enrollment.asc",
+    }
+    if chw_id is not None:
+        params["chw_id"] = f"eq.{chw_id}"
+    rows = await _get("patients", params)
     return [_normalize_patient(r) for r in rows]
 
 
@@ -290,4 +290,41 @@ async def get_patient_detail(patient_id: UUID) -> dict | None:
             else None
         ),
     }
+
+
+def _normalize_dashboard_user(raw: dict) -> dict:
+    user = dict(raw)
+    user.setdefault("display_name", user.get("username", "User"))
+    user.setdefault("role", "chw")
+    user.setdefault("is_active", True)
+    user.setdefault("chw_id", None)
+    return user
+
+
+async def get_dashboard_user_by_username(username: str) -> dict | None:
+    rows = await _get_optional(
+        "dashboard_users",
+        {
+            "select": "*",
+            "username": f"eq.{username}",
+            "limit": "1",
+        },
+    )
+    if not rows:
+        return None
+    return _normalize_dashboard_user(rows[0])
+
+
+async def get_dashboard_user_by_id(user_id: UUID) -> dict | None:
+    rows = await _get_optional(
+        "dashboard_users",
+        {
+            "select": "*",
+            "id": f"eq.{user_id}",
+            "limit": "1",
+        },
+    )
+    if not rows:
+        return None
+    return _normalize_dashboard_user(rows[0])
 
