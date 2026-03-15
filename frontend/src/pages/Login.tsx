@@ -71,12 +71,62 @@ function randomPositionAvoidingCenter() {
   return { left, top };
 }
 
+type StoryStop = {
+  label: string;
+  title: string;
+  lines: string[];
+  images: { src: string; alt: string; label?: string }[];
+  accent: string;
+};
+
+const STORY_STOPS: StoryStop[] = [
+  {
+    label: 'Problem',
+    title: 'The gap',
+    lines: [
+      'Rachel Coyle is a midwife working in rural Yemen, responsible for mothers across villages miles apart.',
+      'But she cannot be everywhere at once.',
+      'Between visits, warning signs can appear - and the delay can be dangerous.',
+    ],
+    images: [{ src: '/yemen.png', alt: 'Photo of a Yemeni midwife' }],
+    accent: '#f97373',
+  },
+  {
+    label: 'Solution',
+    title: 'The signal',
+    lines: [
+      'Aasha turns simple SMS messages into early warnings.',
+      'Mothers can report symptoms using basic text messages - no smartphone, no app, no internet.',
+      'Healthcare workers can quickly see who may need attention first.',
+    ],
+    images: [
+      { src: '/text.png', alt: 'SMS texting interface', label: 'SMS' },
+      { src: '/calendar.png', alt: 'Calendar tracking feature', label: 'Calendar' },
+      { src: '/map.png', alt: 'Map feature', label: 'Map' },
+      { src: '/details.png', alt: 'Patient details dashboard', label: 'Details' },
+    ],
+    accent: '#fb7185',
+  },
+  {
+    label: 'Mission',
+    title: 'The reason',
+    lines: [
+      'Early warning signs save lives.',
+      'Aasha exists to make sure those signals are heard - even in low-resource settings.',
+      'Because earlier signals mean earlier care.',
+    ],
+    images: [{ src: '/aasha.png', alt: 'Aasha mission mark' }],
+    accent: '#14b8a6',
+  },
+];
+
 export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
+  const [activeStop, setActiveStop] = useState(0);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const ORB_COLORS = ['#fde4e8', '#fecaca', '#fce7f3', '#fef2f4', '#fdf2f8'];
@@ -201,13 +251,6 @@ export function Login({ onEnter }: LoginProps) {
           })}
         </div>
 
-        <div
-          className="absolute inset-0 pointer-events-none z-[2]"
-          style={{
-            background: `radial-gradient(480px circle at ${cursor.x}% ${cursor.y}%, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0) 60%)`,
-          }}
-        />
-
         {/* Hero content */}
         <div
           className="relative z-10 flex flex-col items-center text-center"
@@ -264,44 +307,151 @@ export function Login({ onEnter }: LoginProps) {
         </div>
       </section>
 
-      {/* Section 2: About page */}
+      {/* Section 2: About page — one-screen horizontal trail */}
       <section
         ref={aboutRef}
-        className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-slate-50/80 snap-start snap-always"
+        className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-gradient-to-b from-[#fff8f6] via-[#fffaf7] to-[#f6fbf8] relative snap-start snap-always overflow-hidden"
       >
-        <div className="w-full max-w-lg text-center">
-          <h2
-            className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight mb-6"
-            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
-          >
-            About Aasha
-          </h2>
-          <img
-            src="/map.png"
-            alt="Aasha coverage map"
-            className="w-full max-w-md mx-auto rounded-xl border border-slate-200 shadow-md mb-8"
-          />
-          <p
-            className="text-slate-700 text-base sm:text-lg leading-relaxed mb-10"
-            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
-          >
-            <strong className="text-slate-900">Aasha</strong> helps community healthcare workers monitor pregnant and
-            postpartum women in low-resource settings. Mothers report symptoms via <strong>simple SMS</strong> on a basic
-            phone—no smartphone or internet needed. The system turns those messages into structured risk signals so
-            healthcare workers can see who needs follow-up first and bridge the gap between in-person visits.
-          </p>
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -left-16 top-16 w-60 h-60 rounded-full bg-[#ffd8cf] blur-3xl opacity-35" />
+          <div className="absolute right-0 top-24 w-64 h-64 rounded-full bg-[#fbcfe8] blur-3xl opacity-30" />
+          <div className="absolute left-1/3 bottom-[-100px] w-72 h-72 rounded-full bg-[#d6f1df] blur-3xl opacity-30" />
+        </div>
+
+        <div className="relative z-10 max-w-6xl mx-auto h-full flex flex-col">
+          <div className="text-center mb-4 sm:mb-5">
+            <h2
+              className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight"
+              style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+            >
+              The path to earlier care
+            </h2>
+          </div>
+
+          {/* Unified carousel */}
+          <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
+            <div className="mx-auto mb-4 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 backdrop-blur-sm p-1 shadow-sm">
+              {STORY_STOPS.map((stop, idx) => (
+                <button
+                  key={stop.label}
+                  type="button"
+                  onClick={() => setActiveStop(idx)}
+                  className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition ${
+                    idx === activeStop ? 'text-white shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                  style={idx === activeStop ? { backgroundColor: stop.accent } : undefined}
+                >
+                  {stop.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative min-h-[36rem] sm:min-h-[40rem]">
+              <button
+                type="button"
+                onClick={() => setActiveStop((s) => (s - 1 + STORY_STOPS.length) % STORY_STOPS.length)}
+                className="absolute -left-8 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-20 inline-flex items-center justify-center w-12 h-12 rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm text-slate-700 hover:text-slate-900 hover:shadow-md transition-all"
+                aria-label="Previous section"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+
+              <article className="px-14 sm:px-20 md:px-24 py-4 sm:py-5 h-full">
+                <div
+                  className="text-[0.65rem] uppercase tracking-[0.2em] font-semibold"
+                  style={{ color: STORY_STOPS[activeStop].accent }}
+                >
+                  {STORY_STOPS[activeStop].label}
+                </div>
+                <h3 className="mt-1 text-3xl sm:text-4xl font-semibold text-slate-900">{STORY_STOPS[activeStop].title}</h3>
+
+                {activeStop === 1 ? (
+                  <div className="mt-4 relative min-h-[22rem] sm:min-h-[27rem]">
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto max-w-[33rem] text-center px-6">
+                      {STORY_STOPS[activeStop].lines.map((line) => (
+                        <p key={line} className="mt-2 text-base sm:text-lg leading-relaxed text-slate-700">
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+
+                    {[
+                      { pos: 'left-0 top-1 sm:left-4 sm:top-2', rot: '-rotate-6' },
+                      { pos: 'right-0 top-1 sm:right-4 sm:top-2', rot: 'rotate-6' },
+                      { pos: 'left-0 bottom-1 sm:left-4 sm:bottom-2', rot: 'rotate-3' },
+                      { pos: 'right-0 bottom-1 sm:right-4 sm:bottom-2', rot: '-rotate-3' },
+                    ].map((style, idx) => {
+                      const item = STORY_STOPS[activeStop].images[idx];
+                      return (
+                        <div key={item.src} className={`absolute ${style.pos} ${style.rot} w-44 sm:w-52 lg:w-56`}>
+                          <img
+                            src={item.src}
+                            alt={item.alt}
+                            className="h-28 sm:h-32 lg:h-36 w-full object-contain drop-shadow-[0_10px_20px_rgba(15,23,42,0.18)]"
+                          />
+                          <div className="mt-1 text-[0.62rem] uppercase tracking-wide text-slate-600 font-semibold text-center">
+                            {item.label}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <>
+                    {STORY_STOPS[activeStop].lines.map((line) => (
+                      <p key={line} className="mt-2 text-base sm:text-lg leading-relaxed text-slate-700">
+                        {line}
+                      </p>
+                    ))}
+                    <img
+                      src={STORY_STOPS[activeStop].images[0].src}
+                      alt={STORY_STOPS[activeStop].images[0].alt}
+                      className="mt-4 h-44 sm:h-56 w-full object-contain"
+                    />
+                  </>
+                )}
+              </article>
+
+              <button
+                type="button"
+                onClick={() => setActiveStop((s) => (s + 1) % STORY_STOPS.length)}
+                className="absolute -right-8 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-20 inline-flex items-center justify-center w-12 h-12 rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm text-slate-700 hover:text-slate-900 hover:shadow-md transition-all"
+                aria-label="Next section"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-2 flex items-center justify-center gap-2">
+              {STORY_STOPS.map((stop, idx) => (
+                <button
+                  key={stop.label}
+                  type="button"
+                  onClick={() => setActiveStop(idx)}
+                  className={`h-2.5 rounded-full transition-all ${idx === activeStop ? 'w-8' : 'w-2.5 bg-slate-300'}`}
+                  style={idx === activeStop ? { backgroundColor: stop.accent } : undefined}
+                  aria-label={`Go to ${stop.label}`}
+                />
+              ))}
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={scrollToTop}
-            className="flex flex-col items-center bg-transparent border-none text-slate-600 hover:text-slate-900 cursor-pointer font-medium text-sm tracking-wide transition-colors duration-200 outline-none focus:ring-0 focus:outline-none mx-auto"
+            className="mt-5 sm:mt-6 mx-auto flex flex-col items-center bg-transparent border-none text-slate-600 hover:text-slate-900 cursor-pointer font-medium text-sm tracking-wide transition-colors duration-200 outline-none focus:ring-0 focus:outline-none"
             style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
-            aria-label="Back to top"
+            aria-label="Home — scroll to top"
           >
             <span className="flex flex-col items-center mb-1" aria-hidden>
               <span className="text-[8px] leading-none mb-0.5">▲</span>
               <span className="w-px h-5 bg-current opacity-70" />
             </span>
-            <span>Back</span>
+            <span>Home</span>
           </button>
         </div>
       </section>
