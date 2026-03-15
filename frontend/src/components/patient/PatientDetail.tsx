@@ -1,4 +1,5 @@
 import { TierBadge } from '@/components/ui/TierBadge';
+import { BrandedLoader } from '@/components/ui';
 import { SymptomChart, type ChartPoint } from '@/components/patient/SymptomChart';
 import { timeAgo } from '@/utils/time';
 import { gestWeeks } from '@/utils/gestation';
@@ -57,7 +58,7 @@ export function PatientDetail({
 }: PatientDetailProps) {
   if (loading)
     return (
-      <div className="text-center py-8 text-slate-400 text-sm">Loading…</div>
+      <BrandedLoader message="Loading patient insights..." size="md" />
     );
   if (error)
     return (

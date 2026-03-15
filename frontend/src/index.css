@@ -282,3 +282,18 @@ body {
     opacity: 0.08;
   }
 }
+
+/* Simple progress bar for loading states */
+.aasha-progress-track {
+  height: 10px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(184, 80, 80, 0.16);
+}
+.aasha-progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #b85050, #d97777);
+  transition: width 220ms ease-out;
+}
+
