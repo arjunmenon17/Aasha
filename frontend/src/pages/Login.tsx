@@ -72,52 +72,36 @@ function randomPositionAvoidingCenter() {
   return { left, top };
 }
 
-type StoryStop = {
-  label: string;
-  title: string;
-  lines: string[];
-  images: { src: string; alt: string; label?: string }[];
-  accent: string;
-};
+const IMPACT_POINTS = [
+  {
+    title: 'Works on basic phones',
+    body: 'Mothers use simple SMS. No app, no smartphone, no internet required.',
+  },
+  {
+    title: 'Flags risk earlier',
+    body: 'Symptoms are tracked and assessed continuously, not only during clinic visits.',
+  },
+  {
+    title: 'Helps teams act faster',
+    body: 'Doctors and health workers can prioritize urgent patients before conditions escalate.',
+  },
+];
 
-const STORY_STOPS: StoryStop[] = [
+const WHY_AASHA_IMAGES = [
   {
-    label: 'Problem',
-    title: 'The gap',
-    lines: [
-      'Rachel Coyle is a midwife working in rural Yemen, responsible for mothers across villages miles apart.',
-      'But she cannot be everywhere at once.',
-      'Between visits, warning signs can appear - and the delay can be dangerous.',
-    ],
-    images: [{ src: '/yemen.png', alt: 'Photo of a Yemeni midwife' }],
-    accent: '#f97373',
+    src: '/text.png',
+    alt: 'SMS check-in conversation view',
+    label: 'SMS Check-ins',
   },
   {
-    label: 'Solution',
-    title: 'The signal',
-    lines: [
-      'Aasha turns simple SMS messages into early warnings.',
-      'Mothers can report symptoms using basic text messages - no smartphone, no app, no internet.',
-      'Healthcare workers can quickly see who may need attention first.',
-    ],
-    images: [
-      { src: '/text.png', alt: 'SMS texting interface', label: 'SMS' },
-      { src: '/calendar.png', alt: 'Calendar tracking feature', label: 'Calendar' },
-      { src: '/map.png', alt: 'Map feature', label: 'Map' },
-      { src: '/details.png', alt: 'Patient details dashboard', label: 'Details' },
-    ],
-    accent: '#fb7185',
+    src: '/calendar.png',
+    alt: 'Scheduled monitoring and follow-up timeline',
+    label: 'Consistent Monitoring',
   },
   {
-    label: 'Mission',
-    title: 'The reason',
-    lines: [
-      'Early warning signs save lives.',
-      'Aasha exists to make sure those signals are heard - even in low-resource settings.',
-      'Because earlier signals mean earlier care.',
-    ],
-    images: [{ src: '/aasha.png', alt: 'Aasha mission mark' }],
-    accent: '#14b8a6',
+    src: '/map.png',
+    alt: 'Aasha dashboard route and risk overview',
+    label: 'Risk-Aware Routing',
   },
 ];
 
@@ -125,9 +109,9 @@ export function Login({ onEnter }: LoginProps) {
   const [flowers, setFlowers] = useState<{ id: number; left: number; top: number; size: number }[]>([]);
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
+  const [activeWhyImage, setActiveWhyImage] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
-  const [activeStop, setActiveStop] = useState(0);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Kept very pale so the orbs act as soft diffusion layers above the fluid
@@ -312,7 +296,7 @@ export function Login({ onEnter }: LoginProps) {
         </div>
       </section>
 
-      {/* Section 2: About page — one-screen horizontal trail */}
+      {/* Section 2: About page */}
       <section
         ref={aboutRef}
         className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-gradient-to-b from-[#fff8f6] via-[#fffaf7] to-[#f6fbf8] relative snap-start snap-always overflow-hidden"
@@ -324,140 +308,190 @@ export function Login({ onEnter }: LoginProps) {
         </div>
 
         <div className="relative z-10 max-w-6xl mx-auto h-full flex flex-col">
-          <div className="text-center mb-4 sm:mb-5">
+          <div className="text-center mb-4 sm:mb-6">
             <h2
               className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight"
               style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
             >
-              The path to earlier care
+              No mother should be invisible between clinic visits.
             </h2>
+            <p className="mt-3 text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              Aasha turns simple SMS check-ins into early warning signals, helping care teams identify
+              who needs attention first and act before complications become emergencies.
+            </p>
           </div>
 
-          {/* Unified carousel */}
-          <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
-            <div className="mx-auto mb-4 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 backdrop-blur-sm p-1 shadow-sm">
-              {STORY_STOPS.map((stop, idx) => (
-                <button
-                  key={stop.label}
-                  type="button"
-                  onClick={() => setActiveStop(idx)}
-                  className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition ${
-                    idx === activeStop ? 'text-white shadow-sm' : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                  style={idx === activeStop ? { backgroundColor: stop.accent } : undefined}
-                >
-                  {stop.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex-1 flex items-center justify-center">
+            <article className="w-full max-w-5xl rounded-3xl border border-white/70 bg-white/75 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)] px-6 sm:px-10 py-7 sm:py-10">
+              <div className="grid md:grid-cols-[1.3fr_1fr] gap-8 items-center">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50/70 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-rose-700 font-semibold">
+                    Why Aasha
+                  </div>
+                  <h3 className="mt-4 text-2xl sm:text-3xl font-semibold text-slate-900 leading-tight">
+                    Earlier signals. Faster care. Safer pregnancies.
+                  </h3>
+                  <p className="mt-3 text-slate-600 leading-relaxed text-[15px] sm:text-base">
+                    In low-resource settings, risk can rise between visits. Aasha keeps a continuous
+                    connection through SMS so health workers can prioritize high-risk mothers sooner.
+                  </p>
 
-            <div className="relative min-h-[36rem] sm:min-h-[40rem]">
-              <button
-                type="button"
-                onClick={() => setActiveStop((s) => (s - 1 + STORY_STOPS.length) % STORY_STOPS.length)}
-                className="absolute -left-8 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-20 inline-flex items-center justify-center w-12 h-12 rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm text-slate-700 hover:text-slate-900 hover:shadow-md transition-all"
-                aria-label="Previous section"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-
-              <article className="px-14 sm:px-20 md:px-24 py-4 sm:py-5 h-full">
-                <div
-                  className="text-[0.65rem] uppercase tracking-[0.2em] font-semibold"
-                  style={{ color: STORY_STOPS[activeStop].accent }}
-                >
-                  {STORY_STOPS[activeStop].label}
+                  <ul className="mt-5 space-y-3">
+                    {IMPACT_POINTS.map((point) => (
+                      <li key={point.title} className="flex items-start gap-3">
+                        <span className="mt-1 h-2.5 w-2.5 rounded-full bg-rose-400 shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{point.title}</p>
+                          <p className="text-sm text-slate-600 leading-relaxed">{point.body}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <h3 className="mt-1 text-3xl sm:text-4xl font-semibold text-slate-900">{STORY_STOPS[activeStop].title}</h3>
 
-                {activeStop === 1 ? (
-                  <div className="mt-4 relative min-h-[22rem] sm:min-h-[27rem]">
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto max-w-[33rem] text-center px-6">
-                      {STORY_STOPS[activeStop].lines.map((line) => (
-                        <p key={line} className="mt-2 text-base sm:text-lg leading-relaxed text-slate-700">
-                          {line}
-                        </p>
-                      ))}
+                <div className="relative">
+                  <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-rose-100/70 to-emerald-100/60 blur-2xl" />
+                  <div className="relative rounded-2xl border border-slate-100 bg-white/90 p-4 shadow-sm">
+                    <div className="relative rounded-xl border border-rose-100/60 bg-gradient-to-br from-rose-50/30 to-emerald-50/30 p-2">
+                      <img
+                        src={WHY_AASHA_IMAGES[activeWhyImage].src}
+                        alt={WHY_AASHA_IMAGES[activeWhyImage].alt}
+                        className="w-full h-48 sm:h-56 object-contain"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveWhyImage(
+                            (idx) => (idx - 1 + WHY_AASHA_IMAGES.length) % WHY_AASHA_IMAGES.length
+                          )
+                        }
+                        className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-slate-200 bg-white/95 text-slate-700 hover:text-slate-900 hover:shadow-sm transition"
+                        aria-label="Previous Why Aasha image"
+                      >
+                        {'<'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveWhyImage((idx) => (idx + 1) % WHY_AASHA_IMAGES.length)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-slate-200 bg-white/95 text-slate-700 hover:text-slate-900 hover:shadow-sm transition"
+                        aria-label="Next Why Aasha image"
+                      >
+                        {'>'}
+                      </button>
                     </div>
 
-                    {[
-                      { pos: 'left-0 top-1 sm:left-4 sm:top-2', rot: '-rotate-6' },
-                      { pos: 'right-0 top-1 sm:right-4 sm:top-2', rot: 'rotate-6' },
-                      { pos: 'left-0 bottom-1 sm:left-4 sm:bottom-2', rot: 'rotate-3' },
-                      { pos: 'right-0 bottom-1 sm:right-4 sm:bottom-2', rot: '-rotate-3' },
-                    ].map((style, idx) => {
-                      const item = STORY_STOPS[activeStop].images[idx];
-                      return (
-                        <div key={item.src} className={`absolute ${style.pos} ${style.rot} w-44 sm:w-52 lg:w-56`}>
-                          <img
-                            src={item.src}
-                            alt={item.alt}
-                            className="h-28 sm:h-32 lg:h-36 w-full object-contain drop-shadow-[0_10px_20px_rgba(15,23,42,0.18)]"
-                          />
-                          <div className="mt-1 text-[0.62rem] uppercase tracking-wide text-slate-600 font-semibold text-center">
-                            {item.label}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <p className="mt-3 text-center text-xs uppercase tracking-[0.12em] text-slate-500 font-medium">
+                      {WHY_AASHA_IMAGES[activeWhyImage].label}
+                    </p>
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                      {WHY_AASHA_IMAGES.map((image, idx) => (
+                        <button
+                          key={image.label}
+                          type="button"
+                          onClick={() => setActiveWhyImage(idx)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            idx === activeWhyImage ? 'w-7 bg-rose-400' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                          }`}
+                          aria-label={`Show ${image.label} image`}
+                        />
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    {STORY_STOPS[activeStop].lines.map((line) => (
-                      <p key={line} className="mt-2 text-base sm:text-lg leading-relaxed text-slate-700">
-                        {line}
-                      </p>
-                    ))}
-                    <img
-                      src={STORY_STOPS[activeStop].images[0].src}
-                      alt={STORY_STOPS[activeStop].images[0].alt}
-                      className="mt-4 h-44 sm:h-56 w-full object-contain"
-                    />
-                  </>
-                )}
-              </article>
-
-              <button
-                type="button"
-                onClick={() => setActiveStop((s) => (s + 1) % STORY_STOPS.length)}
-                className="absolute -right-8 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-20 inline-flex items-center justify-center w-12 h-12 rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm text-slate-700 hover:text-slate-900 hover:shadow-md transition-all"
-                aria-label="Next section"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 6l6 6-6 6" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mt-2 flex items-center justify-center gap-2">
-              {STORY_STOPS.map((stop, idx) => (
-                <button
-                  key={stop.label}
-                  type="button"
-                  onClick={() => setActiveStop(idx)}
-                  className={`h-2.5 rounded-full transition-all ${idx === activeStop ? 'w-8' : 'w-2.5 bg-slate-300'}`}
-                  style={idx === activeStop ? { backgroundColor: stop.accent } : undefined}
-                  aria-label={`Go to ${stop.label}`}
-                />
-              ))}
-            </div>
+                </div>
+              </div>
+            </article>
           </div>
 
-          <button
-            type="button"
-            onClick={scrollToTop}
-            className="mt-5 sm:mt-6 mx-auto flex flex-col items-center bg-transparent border-none text-slate-600 hover:text-slate-900 cursor-pointer font-medium text-sm tracking-wide transition-colors duration-200 outline-none focus:ring-0 focus:outline-none"
-            style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
-            aria-label="Home — scroll to top"
-          >
-            <span className="flex flex-col items-center mb-1" aria-hidden>
-              <span className="text-[8px] leading-none mb-0.5">▲</span>
-              <span className="w-px h-5 bg-current opacity-70" />
-            </span>
-            <span>Home</span>
-          </button>
+          <article className="mt-5 sm:mt-6 w-full max-w-5xl mx-auto overflow-hidden rounded-3xl border border-rose-100/80 bg-white/85 backdrop-blur-sm shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+            <div className="grid lg:grid-cols-[1.18fr_1fr] items-stretch">
+              <div className="min-h-[24rem] bg-gradient-to-br from-rose-100/70 via-orange-50/70 to-amber-50/60 px-3 py-5 sm:px-4 sm:py-6 flex flex-col justify-center gap-4">
+                <div className="w-full rounded-2xl border border-rose-200/60 bg-white/40 px-2 sm:px-3 py-2 overflow-hidden">
+                  <img
+                    src="/yemen.png"
+                    alt="Maternal care context from Yemen"
+                    className="w-full h-80 sm:h-96 lg:h-[30rem] object-contain scale-[1.16] origin-center"
+                  />
+                </div>
+                <div className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-rose-700 font-semibold">
+                    Case: Zainab (Yemen), 30 weeks
+                  </p>
+                  <p className="mt-1 text-[12px] sm:text-[13px] text-slate-700 leading-relaxed">
+                    Zainab arrived fully dilated with premature twins after a long journey to reach care,
+                    showing how quickly delayed prenatal access can become life-threatening.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-7 lg:p-8 flex flex-col h-full">
+                <div className="inline-flex items-center w-fit rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-rose-700 font-semibold">
+                  Real Case from Yemen
+                </div>
+                <h4 className="mt-3 text-2xl sm:text-[1.72rem] font-semibold text-slate-900 leading-tight">
+                  One delayed signal can become an emergency.
+                </h4>
+
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+                      The problem
+                    </p>
+                    <p className="mt-1.5 text-sm sm:text-base text-slate-700 leading-relaxed">
+                      In low-resource and conflict-affected settings, many women miss prenatal care because
+                      distance and cost are major barriers. Conditions like pre-eclampsia are often detected
+                      late, when intervention is far more urgent.
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+                      The emotional reality
+                    </p>
+                    <p className="mt-1.5 text-sm sm:text-base text-slate-700 leading-relaxed">
+                      Midwives like Rachel Coyle carry the weight of these delays, making high-stakes decisions
+                      with limited visibility between visits while knowing every hour matters.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-5">
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3.5">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-emerald-700 font-semibold">
+                      Why Aasha changes this
+                    </p>
+                    <p className="mt-1.5 text-sm sm:text-base text-emerald-900 leading-relaxed">
+                      Aasha keeps care active between clinic visits by turning SMS check-ins and patient
+                      symptom texts into early risk alerts. Teams can triage sooner, prioritize who needs
+                      urgent attention first, and intervene before warning signs escalate.
+                    </p>
+                  </div>
+                  <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">
+                    Inspired by MSF reporting from Taiz Houban, Yemen (name changed in source for privacy).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <div className="mt-6 sm:mt-8 mx-auto flex items-center gap-3">
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-medium hover:bg-white/70 transition-colors"
+              style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+            >
+              Back to top
+            </button>
+            <button
+              type="button"
+              onClick={onEnter}
+              className="px-4 py-2 rounded-lg border border-pregnancy bg-white text-pregnancy text-sm font-medium hover:bg-pregnancy/5 transition-colors"
+              style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
+            >
+              Enter dashboard
+            </button>
+          </div>
         </div>
       </section>
     </div>
