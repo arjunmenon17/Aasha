@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type MouseEvent, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type MouseEvent, type FormEvent, type PointerEvent } from 'react';
 import { Flower } from '@/components/login/Flower';
 import { FluidBackground } from '@/components/login/FluidBackground';
 import { authApi } from '@/api/auth';
@@ -106,6 +106,11 @@ const WHY_AASHA_IMAGES = [
     alt: 'Aasha dashboard route and risk overview',
     label: 'Risk-Aware Routing',
   },
+  {
+    src: '/details.png',
+    alt: 'Detailed patient clinical assessment and timeline',
+    label: 'Patient Detail View',
+  },
 ];
 
 export function Login({ onEnter }: LoginProps) {
@@ -113,6 +118,8 @@ export function Login({ onEnter }: LoginProps) {
   const [cursor, setCursor] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
   const [activeWhyImage, setActiveWhyImage] = useState(0);
+  const [isWhyZoomed, setIsWhyZoomed] = useState(false);
+  const [whyDragStartX, setWhyDragStartX] = useState<number | null>(null);
   const [publicPath, setPublicPath] = useState<'/' | '/about' | '/login'>(() => {
     if (typeof window === 'undefined') return '/';
     if (window.location.pathname === '/about') return '/about';
@@ -128,6 +135,8 @@ export function Login({ onEnter }: LoginProps) {
   const aboutRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const zoomScrollRef = useRef<HTMLDivElement>(null);
+  const whyDidDragRef = useRef(false);
   // Kept very pale so the orbs act as soft diffusion layers above the fluid
   const ORB_COLORS = ['#fde4e8', '#fecaca', '#fce7f3', '#fef2f4', '#fdf2f8'];
   const [orbs, setOrbs] = useState<
@@ -232,6 +241,44 @@ export function Login({ onEnter }: LoginProps) {
     }
   };
 
+  const goPrevWhyImage = () => {
+    setActiveWhyImage(
+      (idx) => (idx - 1 + WHY_AASHA_IMAGES.length) % WHY_AASHA_IMAGES.length
+    );
+  };
+
+  const goNextWhyImage = () => {
+    setActiveWhyImage((idx) => (idx + 1) % WHY_AASHA_IMAGES.length);
+  };
+
+  const handleWhyPointerDown = (ev: PointerEvent<HTMLDivElement>) => {
+    setWhyDragStartX(ev.clientX);
+    whyDidDragRef.current = false;
+  };
+
+  const handleWhyPointerUp = (ev: PointerEvent<HTMLDivElement>) => {
+    if (whyDragStartX == null) return;
+    const deltaX = ev.clientX - whyDragStartX;
+    if (Math.abs(deltaX) >= 45) {
+      whyDidDragRef.current = true;
+      if (deltaX > 0) {
+        goPrevWhyImage();
+      } else {
+        goNextWhyImage();
+      }
+    }
+    setWhyDragStartX(null);
+  };
+
+  const handleWhyImageClick = () => {
+    if (whyDidDragRef.current) {
+      // Drag gestures should switch slide only; do not also open zoom popup.
+      whyDidDragRef.current = false;
+      return;
+    }
+    setIsWhyZoomed(true);
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -259,6 +306,36 @@ export function Login({ onEnter }: LoginProps) {
     window.addEventListener('popstate', syncSectionFromPath);
     return () => window.removeEventListener('popstate', syncSectionFromPath);
   }, []);
+
+  useEffect(() => {
+    if (!isWhyZoomed) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      const scroller = zoomScrollRef.current;
+      if (!scroller) return;
+      const step = 72;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goPrevWhyImage();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goNextWhyImage();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        scroller.scrollBy({ top: -step, behavior: 'smooth' });
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        scroller.scrollBy({ top: step, behavior: 'smooth' });
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsWhyZoomed(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isWhyZoomed]);
 
   if (publicPath === '/login') {
     return (
@@ -579,20 +656,22 @@ export function Login({ onEnter }: LoginProps) {
                 <div className="relative">
                   <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-rose-100/70 to-emerald-100/60 blur-2xl" />
                   <div className="relative rounded-2xl border border-slate-100 bg-white/90 p-4 shadow-sm">
-                    <div className="relative rounded-xl border border-rose-100/60 bg-gradient-to-br from-rose-50/30 to-emerald-50/30 p-2">
+                    <div
+                      className="relative rounded-xl border border-rose-100/60 bg-gradient-to-br from-rose-50/30 to-emerald-50/30 p-2"
+                      onPointerDown={handleWhyPointerDown}
+                      onPointerUp={handleWhyPointerUp}
+                      onPointerCancel={() => setWhyDragStartX(null)}
+                    >
                       <img
                         src={WHY_AASHA_IMAGES[activeWhyImage].src}
                         alt={WHY_AASHA_IMAGES[activeWhyImage].alt}
-                        className="w-full h-48 sm:h-56 object-contain"
+                        className="w-full h-48 sm:h-56 object-contain cursor-pointer"
+                        onClick={handleWhyImageClick}
                       />
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setActiveWhyImage(
-                            (idx) => (idx - 1 + WHY_AASHA_IMAGES.length) % WHY_AASHA_IMAGES.length
-                          )
-                        }
+                        onClick={goPrevWhyImage}
                         className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-slate-200 bg-white/95 text-slate-700 hover:text-slate-900 hover:shadow-sm transition"
                         aria-label="Previous Why Aasha image"
                       >
@@ -600,7 +679,7 @@ export function Login({ onEnter }: LoginProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setActiveWhyImage((idx) => (idx + 1) % WHY_AASHA_IMAGES.length)}
+                        onClick={goNextWhyImage}
                         className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-slate-200 bg-white/95 text-slate-700 hover:text-slate-900 hover:shadow-sm transition"
                         aria-label="Next Why Aasha image"
                       >
@@ -757,6 +836,69 @@ export function Login({ onEnter }: LoginProps) {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {isWhyZoomed && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/75"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Zoomed image viewer"
+          onClick={() => setIsWhyZoomed(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setIsWhyZoomed(false)}
+            className="absolute top-4 right-4 z-10 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-white"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={goPrevWhyImage}
+            className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border border-slate-200 bg-white/95 text-slate-700 hover:text-slate-900 hover:shadow-md transition"
+            aria-label="Previous image"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClickCapture={(e) => e.stopPropagation()}
+          >
+            {'<'}
+          </button>
+          <button
+            type="button"
+            onClick={goNextWhyImage}
+            className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border border-slate-200 bg-white/95 text-slate-700 hover:text-slate-900 hover:shadow-md transition"
+            aria-label="Next image"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClickCapture={(e) => e.stopPropagation()}
+          >
+            {'>'}
+          </button>
+          <div
+            ref={zoomScrollRef}
+            className="h-full w-full overflow-auto p-5 sm:p-8"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={handleWhyPointerDown}
+            onPointerUp={handleWhyPointerUp}
+            onPointerCancel={() => setWhyDragStartX(null)}
+          >
+            <div className="min-h-full min-w-full flex items-center justify-center">
+              <div className="flex flex-col items-center">
+              <img
+                src={WHY_AASHA_IMAGES[activeWhyImage].src}
+                alt={WHY_AASHA_IMAGES[activeWhyImage].alt}
+                className="w-auto max-w-[92vw] max-h-[82vh] h-auto object-contain select-none rounded-lg shadow-2xl"
+                draggable={false}
+              />
+              <p className="mt-3 text-center text-sm font-medium text-slate-100">
+                {WHY_AASHA_IMAGES[activeWhyImage].label}
+              </p>
+              <p className="mt-1 text-center text-xs text-slate-300">
+                {WHY_AASHA_IMAGES[activeWhyImage].alt}
+              </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
