@@ -153,7 +153,7 @@ export function EnrollmentForm({ onSuccess, onCancel }: EnrollmentFormProps) {
   const [enrolled, setEnrolled] = useState<string | null>(null);
 
   const setFhField = (key: keyof Omit<FamilyHistory, 'notes'>, value: FamilyHistoryAnswer) => {
-    setFamilyHistory((prev) => ({ ...prev, [key]: value }));
+    setFamilyHistory((prev: FamilyHistory) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -366,7 +366,7 @@ export function EnrollmentForm({ onSuccess, onCancel }: EnrollmentFormProps) {
           <div className="space-y-1">
             {FAMILY_HISTORY_QUESTIONS.map(({ key, label }, i) => (
               <div
-                key={key}
+                key={String(key)}
                 className={`flex items-center justify-between gap-4 py-3 ${
                   i < FAMILY_HISTORY_QUESTIONS.length - 1 ? 'border-b border-slate-100' : ''
                 }`}
@@ -383,7 +383,7 @@ export function EnrollmentForm({ onSuccess, onCancel }: EnrollmentFormProps) {
             <Field label="Additional Notes">
               <textarea
                 value={familyHistory.notes ?? ''}
-                onChange={(e) => setFamilyHistory((prev) => ({ ...prev, notes: e.target.value }))}
+                onChange={(e) => setFamilyHistory((prev: FamilyHistory) => ({ ...prev, notes: e.target.value }))}
                 rows={2}
                 placeholder="Any other relevant family medical history..."
                 className={`${inputClass} resize-none`}

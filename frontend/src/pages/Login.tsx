@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type MouseEvent } from 'react';
 import { Flower } from '@/components/login/Flower';
+import { FluidBackground } from '@/components/login/FluidBackground';
 
 interface LoginProps {
   onEnter: () => void;
@@ -79,6 +80,7 @@ export function Login({ onEnter }: LoginProps) {
   const aboutRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Kept very pale so the orbs act as soft diffusion layers above the fluid
   const ORB_COLORS = ['#fde4e8', '#fecaca', '#fce7f3', '#fef2f4', '#fdf2f8'];
   const [orbs, setOrbs] = useState<
     { id: number; left: number; top: number; size: number; color: string; delay: number }[]
@@ -166,6 +168,9 @@ export function Login({ onEnter }: LoginProps) {
         ref={heroRef}
         className="min-h-screen flex flex-col items-center justify-center px-6 relative snap-start snap-always"
       >
+        {/* WebGL fluid simulation — sits behind all other layers */}
+        <FluidBackground />
+
         {/* Animated orbs + flowers — extended bounds so no visible edge when moving cursor */}
         <div
           className="absolute pointer-events-none overflow-hidden -top-[45%] -left-[20%] -right-[20%] -bottom-[20%]"
