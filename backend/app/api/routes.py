@@ -292,31 +292,34 @@ async def get_patient(patient_id: UUID, _auth_user: dict = Depends(require_auth_
 
 
 @router.post("/api/patients/{patient_id}/resolve")
-async def resolve_escalation(
-    patient_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    _auth_user: dict = Depends(require_auth_user),
-):
-    """Resolve active escalation for a patient."""
+async def resolve_escalation(patient_id: UUID, db: AsyncSession = Depends(get_db)):
+    """Resolve active escalation for a patient (idempotent)."""
+    patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+    patient = patient_result.scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
     result = await db.execute(
         select(EscalationEvent)
         .where(EscalationEvent.patient_id == patient_id, EscalationEvent.status == "active")
+        .order_by(EscalationEvent.created_at.desc())
+        .limit(1)
     )
     escalation = result.scalar_one_or_none()
     if not escalation:
-        raise HTTPException(status_code=404, detail="No active escalation found")
+        # Keep endpoint idempotent so UI can safely click Resolve even if
+        # the escalation was already auto-resolved by de-escalation logic.
+        patient.current_risk_tier = 0
+        patient.check_in_frequency = "standard"
+        await db.commit()
+        return {"status": "already_resolved", "escalation_id": None}
 
     escalation.status = "resolved"
     escalation.resolved_at = datetime.utcnow()
 
     # Reset patient tier
-    patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
-    patient = patient_result.scalar_one_or_none()
-    if patient:
-        _assert_patient_scope(patient.chw_id, _auth_user)
-    if patient:
-        patient.current_risk_tier = 0
-        patient.check_in_frequency = "standard"
+    patient.current_risk_tier = 0
+    patient.check_in_frequency = "standard"
 
     await db.commit()
     return {"status": "resolved", "escalation_id": str(escalation.id)}

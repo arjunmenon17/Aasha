@@ -16,6 +16,19 @@ from app.services.question_trees import get_tree
 from app.services.classifier_service import classify_free_text
 
 logger = logging.getLogger(__name__)
+MAX_FREE_TEXT_NOTE_CHARS = 500
+
+
+def _current_gestational_age_days(patient: Patient) -> int:
+    days_since_enrollment = (datetime.now(timezone.utc) - patient.enrollment_date).days
+    return patient.gestational_age_at_enrollment + days_since_enrollment
+
+
+def _normalize_free_text_note(text: str) -> str:
+    cleaned = " ".join((text or "").strip().split())
+    if len(cleaned) > MAX_FREE_TEXT_NOTE_CHARS:
+        cleaned = cleaned[:MAX_FREE_TEXT_NOTE_CHARS]
+    return cleaned
 
 
 async def start_checkin(patient: Patient, db: AsyncSession, check_in_id=None):
@@ -73,14 +86,7 @@ async def process_inbound_message(patient: Patient, body: str, db: AsyncSession)
     conversation = result.scalar_one_or_none()
 
     if not conversation:
-        # No active conversation — send a gentle message
-        await send_sms(
-            patient.phone_number,
-            "Thank you for your message. We will check in with you at your next scheduled time. "
-            "If you feel unwell, please contact your health worker.",
-            patient_id=patient.id,
-            db=db,
-        )
+        await handle_unsolicited_symptom_report(patient, body, db)
         return
 
     tree = get_tree(patient.status)
@@ -94,27 +100,39 @@ async def process_inbound_message(patient: Patient, body: str, db: AsyncSession)
 
     # Parse response
     response = body.strip()
+    node_type = current_node.get("type", "single_number")
     valid_options = current_node.get("options", [])
 
-    # Try direct numeric match first
-    if response in valid_options:
-        parsed_response = response
-    else:
-        # Try free-text classification via Claude Haiku
-        parsed_response = await classify_free_text(response, current_node, valid_options)
-
-        if parsed_response is None:
-            # Unclassifiable — ask for clarification, stay at current node
-            clarification = (
-                "I didn't quite understand your response. "
-                "Please reply with just the number:\n"
+    if node_type == "open_text":
+        if not response:
+            await send_sms(
+                patient.phone_number,
+                "Please share your message, or reply with 0 to skip.",
+                patient_id=patient.id,
+                db=db,
             )
-            for opt in valid_options:
-                # Find the option text from the message
-                clarification += f"{opt} "
-            clarification += "\n" + current_node["message"].format(name=patient.name)
-            await send_sms(patient.phone_number, clarification, patient_id=patient.id, db=db)
             return
+        parsed_response = "skipped" if response == "0" else _normalize_free_text_note(response)
+    else:
+        # Try direct numeric match first
+        if response in valid_options:
+            parsed_response = response
+        else:
+            # Try free-text classification via Claude Haiku
+            parsed_response = await classify_free_text(response, current_node, valid_options)
+
+            if parsed_response is None:
+                # Unclassifiable — ask for clarification, stay at current node
+                clarification = (
+                    "I didn't quite understand your response. "
+                    "Please reply with just the number:\n"
+                )
+                for opt in valid_options:
+                    # Find the option text from the message
+                    clarification += f"{opt} "
+                clarification += "\n" + current_node["message"].format(name=patient.name)
+                await send_sms(patient.phone_number, clarification, patient_id=patient.id, db=db)
+                return
 
     # Store response
     data = conversation.conversation_data or {}
@@ -154,8 +172,7 @@ async def complete_checkin(patient: Patient, conversation: ConversationState, db
     conversation.is_active = False
 
     # Calculate gestational age
-    days_since_enrollment = (datetime.now(timezone.utc) - patient.enrollment_date).days
-    gestational_age_days = patient.gestational_age_at_enrollment + days_since_enrollment
+    gestational_age_days = _current_gestational_age_days(patient)
 
     # Create symptom log
     data = conversation.conversation_data or {}
@@ -202,6 +219,47 @@ async def complete_checkin(patient: Patient, conversation: ConversationState, db
     await run_clinical_assessment(patient, symptom_log, db)
 
     logger.info(f"Check-in completed for patient {patient.name} ({patient.id})")
+
+
+async def handle_unsolicited_symptom_report(patient: Patient, body: str, db: AsyncSession):
+    """Immediately triage patient-initiated symptom SMS outside an active check-in."""
+    note = _normalize_free_text_note(body)
+    if not note or note == "0":
+        await send_sms(
+            patient.phone_number,
+            "Please describe your symptoms in a short message so we can review them quickly.",
+            patient_id=patient.id,
+            db=db,
+        )
+        return
+
+    symptom_log = SymptomLog(
+        patient_id=patient.id,
+        check_in_id=None,
+        gestational_age_days=_current_gestational_age_days(patient),
+        responses={
+            "unsolicited_report": "1",
+            "final_note": note,
+            "report_source": "patient_unsolicited_sms",
+        },
+        raw_responses={
+            "raw_final_note": body.strip(),
+            "raw_unsolicited_text": body.strip(),
+        },
+    )
+    db.add(symptom_log)
+    await db.flush()
+
+    # Triage immediately instead of waiting for next scheduled check-in.
+    from app.services.clinical_agent import run_clinical_assessment
+    await run_clinical_assessment(patient, symptom_log, db)
+
+    await send_sms(
+        patient.phone_number,
+        "Thank you for your message. We have received your symptoms and updated your care team.",
+        patient_id=patient.id,
+        db=db,
+    )
 
 
 async def update_patient_baseline(patient: Patient, responses: dict, db: AsyncSession):

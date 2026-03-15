@@ -8,6 +8,9 @@ export type {
   PatientDetail,
   PatientsSummary,
   PatientsResponse,
+  FamilyHistoryAnswer,
+  FamilyHistory,
+  PatientEnrollRequest,
 } from './patient';
 export type {
   AuthUser,
