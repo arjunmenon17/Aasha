@@ -272,13 +272,14 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
               <button
                 type="button"
                 onClick={() => setCalendarPopupOpen(true)}
-                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
-                title="Open calendar"
-                aria-label="Open calendar"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition shadow-sm"
+                title="Open full calendar and schedule manager"
+                aria-label="Open full calendar and schedule manager"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                 </svg>
+                <span className="text-xs font-semibold">Open Calendar</span>
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-[0.65rem] text-slate-500 mb-1">
@@ -299,19 +300,27 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                   const dk = dateKey(currentYear, currentMonth, day);
                   const hasAppointments = (appointments[dk]?.length ?? 0) > 0;
                   return (
-                    <div
+                    <button
                       key={key}
-                      className={`h-7 flex flex-col items-center justify-center rounded-full ${
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(dk);
+                        setPopupView({ year: currentYear, month: currentMonth });
+                        setSchedulePopupDate(dk);
+                      }}
+                      className={`h-7 w-full flex flex-col items-center justify-center rounded-full transition ${
                         isToday
                           ? 'bg-pregnancy text-white text-xs'
                           : 'text-slate-700 hover:bg-slate-100'
                       }`}
+                      aria-label={`Open schedule for ${dk}`}
+                      title={`Open schedule for ${dk}`}
                     >
                       <span>{day}</span>
                       {hasAppointments && (
                         <span className={`w-1 h-1 rounded-full mt-0.5 ${isToday ? 'bg-white' : 'bg-pregnancy'}`} aria-hidden />
                       )}
-                    </div>
+                    </button>
                   );
                 }),
               )}
@@ -436,7 +445,10 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                           <button
                             key={key}
                             type="button"
-                            onClick={() => setSelectedDate(dk)}
+                            onClick={() => {
+                              setSelectedDate(dk);
+                              setSchedulePopupDate(dk);
+                            }}
                             className={`h-10 flex flex-col items-center justify-center rounded-lg border transition ${
                               isSelected
                                 ? 'border-pregnancy bg-pregnancy/10 ring-1 ring-pregnancy/30'
@@ -659,7 +671,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                                   <div className="min-w-0 flex flex-col justify-center">
                                     <span className="text-xs font-semibold truncate">{apt.patientName}</span>
                                     <span className="text-[0.65rem] opacity-90 tabular-nums">
-                                      {formatTimeDisplay(apt.time)} – {formatTimeDisplay(apt.timeEnd)}
+                                      {formatTimeRange(apt.time, apt.timeEnd)}
                                     </span>
                                   </div>
                                   <button
