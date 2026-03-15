@@ -274,6 +274,24 @@ def build_retrieval_query(responses: dict, patient: Patient, raw_responses: dict
         terms) if terms else "routine antenatal check normal pregnancy"
     return query
 
+_SOURCE_TITLE_MAP: dict[str, str] = {
+    "Obstetric and Gynecological Emergencies - Mark Pearlman.pdf": "2004 - Obstetric and Gynecological Emergencies",
+    "dewhurtp1.pdf":"2007 - Dewhurst's Textbook of Obsteterics & Gynaecology",
+    "dewhurstp2.pdf":"2007 - Dewhurst's Textbook of Obsteterics & Gynaecology",
+    "Current-Diagnosis-Treatment-Obstetrics-Gynecology-p1.pdf":"2007 - Current Diagnosis & Treatment Obstetrics & Gynecology",
+    "Current-Diagnosis-Treatment-Obstetrics-Gynecology-2.pdf":"2007 - Current Diagnosis & Treatment Obstetrics & Gynecology",
+    "Current-Diagnosis-Treatment-Obstetrics-Gynecology-3.pdf":"2007 - Current Diagnosis & Treatment Obstetrics & Gynecology",
+    "Current-Diagnosis-Treatment-Obstetrics-Gynecology-4.pdf":"2007 - Current Diagnosis & Treatment Obstetrics & Gynecology",
+    "Current-Diagnosis-Treatment-Obstetrics-Gynecology-5.pdf":"2007 - Current Diagnosis & Treatment Obstetrics & Gynecology",
+}
+    
+def format_source(source: str) -> str:
+    if source in _SOURCE_TITLE_MAP:
+        return _SOURCE_TITLE_MAP[source]
+    else:
+        return ""
+
+
 
 async def retrieve_clinical_context(query: str, top_k: int = 5) -> list[dict]:
     """Step 3: Retrieve clinical protocol chunks from Moorcheh."""
@@ -304,7 +322,7 @@ async def retrieve_clinical_context(query: str, top_k: int = 5) -> list[dict]:
 
         return [{
             "chunk_id": match["id"],
-            "source": match.get("metadata", {}).get("source", "Unknown"),
+            "source": format_source(match.get("metadata", {}).get("source", "Unknown")),
             "section": match.get("metadata", {}).get("section", ""),
             "content": match.get("text", ""),
             "similarity": match.get("score", 0.0),

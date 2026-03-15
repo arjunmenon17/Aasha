@@ -1,8 +1,12 @@
 import logging
-from datetime import datetime, timezone
+import base64
+import hashlib
+import hmac
+import json
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,23 +19,152 @@ from app.models.models import (
 from app.schemas.schemas import (
     PatientCreate, PatientResponse, PatientDetail, DashboardResponse,
     TierSummary, AssessmentResponse, SymptomLogResponse, EscalationResponse,
-    EnrollResponse
+    EnrollResponse, LoginRequest, LoginResponse, AuthUserResponse
 )
 from app.services.supabase_data_service import (
     is_configured as supabase_configured,
     list_patients as supabase_list_patients,
     get_patient_detail as supabase_get_patient_detail,
+    get_dashboard_user_by_username,
+    get_dashboard_user_by_id,
 )
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
+def _b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("utf-8")
+
+
+def _b64url_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def _hash_password(password: str, salt: str, iterations: int = 120000) -> str:
+    raw = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+    return _b64url_encode(raw)
+
+
+def _verify_password(password: str, stored_hash: str) -> bool:
+    # Format: pbkdf2_sha256$<iterations>$<salt>$<hash>
+    try:
+        algo, iter_s, salt, digest = stored_hash.split("$", 3)
+        if algo != "pbkdf2_sha256":
+            return False
+        expected = _hash_password(password, salt, int(iter_s))
+        return hmac.compare_digest(expected, digest)
+    except Exception:
+        return False
+
+
+def _sign_token(payload: dict) -> str:
+    payload_json = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    payload_b64 = _b64url_encode(payload_json)
+    sig = hmac.new(settings.AUTH_SECRET_KEY.encode("utf-8"), payload_b64.encode("utf-8"), hashlib.sha256).digest()
+    sig_b64 = _b64url_encode(sig)
+    return f"{payload_b64}.{sig_b64}"
+
+
+def _decode_token(token: str) -> dict | None:
+    try:
+        payload_b64, sig_b64 = token.split(".", 1)
+        expected_sig = hmac.new(
+            settings.AUTH_SECRET_KEY.encode("utf-8"),
+            payload_b64.encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        if not hmac.compare_digest(_b64url_encode(expected_sig), sig_b64):
+            return None
+        payload = json.loads(_b64url_decode(payload_b64).decode("utf-8"))
+        exp = int(payload.get("exp", 0))
+        if exp < int(datetime.now(timezone.utc).timestamp()):
+            return None
+        return payload
+    except Exception:
+        return None
+
+
+async def require_auth_user(authorization: str | None = Header(default=None)) -> dict:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    payload = _decode_token(token)
+    if not payload or "sub" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    try:
+        user_id = UUID(payload["sub"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token subject")
+    user = await get_dashboard_user_by_id(user_id)
+    if not user or not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    return user
+
+
+def _is_admin(user: dict) -> bool:
+    return str(user.get("role", "")).lower() == "admin"
+
+
+def _assert_patient_scope(patient_chw_id, auth_user: dict):
+    if _is_admin(auth_user):
+        return
+    chw_id = auth_user.get("chw_id")
+    if not chw_id:
+        raise HTTPException(status_code=403, detail="CHW account missing chw_id mapping")
+    if str(patient_chw_id) != str(chw_id):
+        raise HTTPException(status_code=403, detail="Not allowed to access this patient")
+
+
+@router.post("/api/auth/login", response_model=LoginResponse)
+async def login(credentials: LoginRequest):
+    user = await get_dashboard_user_by_username(credentials.username)
+    if not user or not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    if not _verify_password(credentials.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    exp = int((datetime.now(timezone.utc) + timedelta(hours=12)).timestamp())
+    token = _sign_token(
+        {
+            "sub": str(user["id"]),
+            "username": user["username"],
+            "role": user.get("role", "chw"),
+            "exp": exp,
+        }
+    )
+    return LoginResponse(
+        access_token=token,
+        user=AuthUserResponse(
+            id=user["id"],
+            username=user["username"],
+            display_name=user.get("display_name", user["username"]),
+            role=user.get("role", "chw"),
+        ),
+    )
+
+
+@router.get("/api/auth/me", response_model=AuthUserResponse)
+async def auth_me(user: dict = Depends(require_auth_user)):
+    return AuthUserResponse(
+        id=user["id"],
+        username=user["username"],
+        display_name=user.get("display_name", user["username"]),
+        role=user.get("role", "chw"),
+    )
+
+
 # --- Patient Endpoints ---
 
 @router.post("/api/patients", response_model=EnrollResponse)
-async def enroll_patient(patient_data: PatientCreate, db: AsyncSession = Depends(get_db)):
+async def enroll_patient(
+    patient_data: PatientCreate,
+    db: AsyncSession = Depends(get_db),
+    _auth_user: dict = Depends(require_auth_user),
+):
     """Enroll a new patient and send welcome SMS."""
     # Check for duplicate phone
     existing = await db.execute(
@@ -93,7 +226,7 @@ async def enroll_patient(patient_data: PatientCreate, db: AsyncSession = Depends
 
 
 @router.get("/api/patients", response_model=DashboardResponse)
-async def list_patients():
+async def list_patients(_auth_user: dict = Depends(require_auth_user)):
     """List all patients sorted by risk tier (desc) for dashboard."""
     if not supabase_configured():
         raise HTTPException(
@@ -101,7 +234,13 @@ async def list_patients():
             detail="Supabase REST is not configured (need SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY).",
         )
 
-    raw_patients = await supabase_list_patients()
+    if _is_admin(_auth_user):
+        scoped_chw_id = None
+    else:
+        scoped_chw_id = _auth_user.get("chw_id")
+        if not scoped_chw_id:
+            raise HTTPException(status_code=403, detail="CHW account missing chw_id mapping")
+    raw_patients = await supabase_list_patients(chw_id=scoped_chw_id)
     patients = [PatientResponse.model_validate(p) for p in raw_patients]
 
     # Build tier summary
@@ -123,7 +262,7 @@ async def list_patients():
 
 
 @router.get("/api/patients/{patient_id}", response_model=PatientDetail)
-async def get_patient(patient_id: UUID):
+async def get_patient(patient_id: UUID, _auth_user: dict = Depends(require_auth_user)):
     """Get detailed patient info including latest assessment and symptom logs."""
     if not supabase_configured():
         raise HTTPException(
@@ -134,6 +273,7 @@ async def get_patient(patient_id: UUID):
     data = await supabase_get_patient_detail(patient_id)
     if not data:
         raise HTTPException(status_code=404, detail="Patient not found")
+    _assert_patient_scope(data["patient"].get("chw_id"), _auth_user)
     detail = PatientDetail.model_validate(data["patient"])
     detail.latest_assessment = (
         AssessmentResponse.model_validate(data["latest_assessment"])
@@ -274,12 +414,17 @@ async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 # --- Trigger check-in manually ---
 
 @router.post("/api/check-in/{patient_id}")
-async def trigger_checkin(patient_id: UUID, db: AsyncSession = Depends(get_db)):
+async def trigger_checkin(
+    patient_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _auth_user: dict = Depends(require_auth_user),
+):
     """Manually trigger a check-in for a patient."""
     result = await db.execute(select(Patient).where(Patient.id == patient_id))
     patient = result.scalar_one_or_none()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+    _assert_patient_scope(patient.chw_id, _auth_user)
 
     from app.services.messaging_service import start_checkin
     await start_checkin(patient, db)
@@ -291,7 +436,18 @@ async def trigger_checkin(patient_id: UUID, db: AsyncSession = Depends(get_db)):
 # --- Assessments ---
 
 @router.get("/api/patients/{patient_id}/assessments", response_model=list[AssessmentResponse])
-async def get_assessments(patient_id: UUID, limit: int = 10, db: AsyncSession = Depends(get_db)):
+async def get_assessments(
+    patient_id: UUID,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db),
+    _auth_user: dict = Depends(require_auth_user),
+):
+    patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+    patient = patient_result.scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    _assert_patient_scope(patient.chw_id, _auth_user)
+
     result = await db.execute(
         select(ClinicalAssessment)
         .where(ClinicalAssessment.patient_id == patient_id)
