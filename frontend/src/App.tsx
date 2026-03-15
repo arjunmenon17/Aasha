@@ -59,60 +59,64 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden app-shell-bg">
+    <div className="min-h-screen relative overflow-hidden app-shell-bg flex flex-col">
       <FloralBackdrop />
-      <div className="max-w-6xl mx-auto px-4 py-6 relative z-10">
-        <header className="flex items-center justify-between mb-6 rounded-2xl border border-white/70 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm">
+      <header className="flex items-center justify-between w-full rounded-t-xl border-b border-slate-200/80 bg-white/90 backdrop-blur-sm pl-6 sm:pl-8 pr-4 sm:pr-6 py-3 shadow-sm relative z-10 shrink-0">
+        <div className="flex items-center gap-3">
+          <img
+            src="/aasha.png"
+            alt="Aasha"
+            className="h-10 w-auto object-contain drop-shadow-sm"
+          />
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-[0.16em] uppercase text-slate-900">
+              AASHA
+            </h1>
+            <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
+              Monitoring Pregnancies Beyond the Clinic
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <img
-              src="/aasha.png"
-              alt="Aasha"
-              className="h-10 w-auto object-contain drop-shadow-sm"
-            />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-[0.16em] uppercase text-slate-900">
-                AASHA
-              </h1>
-              <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
-                Monitoring Pregnancies Beyond the Clinic
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="flex items-center gap-2 justify-end">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    connected ? 'bg-green-500 pulse-ring' : 'bg-red-500'
-                  }`}
-                />
-                <span className="text-xs text-slate-500">
-                  {connected ? 'Live' : 'Disconnected'}
-                </span>
-              </div>
-              {lastRefresh && (
-                <div className="text-xs text-slate-400">
-                  Updated {lastRefresh.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setEnrolling(true)}
-              className="text-xs px-3 py-1.5 rounded-full bg-pink-600 text-white hover:bg-pink-700"
+            <div
+              className={`inline-flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium ${
+                connected
+                  ? 'bg-emerald-50/80 text-emerald-700'
+                  : 'bg-red-50/80 text-red-700'
+              }`}
             >
-              Enroll Patient
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="text-xs px-3 py-1.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
-            >
-              Logout
-            </button>
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  connected ? 'bg-emerald-500 pulse-ring' : 'bg-red-500'
+                }`}
+              />
+              <span>{connected ? 'Live' : 'Disconnected'}</span>
+            </div>
+            {lastRefresh && (
+              <div className="text-xs text-slate-400 hidden sm:block">
+                Updated {lastRefresh.toLocaleTimeString()}
+              </div>
+            )}
           </div>
-        </header>
+          <button
+            type="button"
+            onClick={() => setEnrolling(true)}
+            className="text-xs px-3 py-1.5 rounded-full bg-[#B85050] text-white hover:bg-[#9A4040] transition"
+          >
+            Enroll Patient
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-sm font-medium px-3 py-1.5 rounded-full text-slate-800 hover:bg-slate-200"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
 
+      <div className="max-w-6xl mx-auto px-4 py-6 relative z-10 w-full flex-1 min-h-0">
         {enrolling ? (
           <EnrollmentForm
             onSuccess={() => { setEnrolling(false); refetch(); }}

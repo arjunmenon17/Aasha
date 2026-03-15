@@ -158,8 +158,8 @@ async def assemble_patient_context(
             "current_risk_tier": patient.current_risk_tier,
             "consecutive_missed_checkins": patient.consecutive_misses,
         },
-        "risk_factors":
-        patient.risk_factors or {},
+        "risk_factors": patient.risk_factors or {},
+        "family_history": (patient.risk_factors or {}).get("family_history", {}),
         "baseline":
         patient.baseline or {},
         "symptom_trajectory": [{
@@ -213,6 +213,16 @@ def build_retrieval_query(responses: dict, patient: Patient) -> str:
         terms.append("prior preeclampsia history")
     if risk_factors.get("chronic_hypertension"):
         terms.append("chronic hypertension")
+
+    fh = risk_factors.get("family_history", {})
+    if fh.get("preeclampsia_eclampsia") == "yes":
+        terms.append("family history preeclampsia eclampsia hereditary risk")
+    if fh.get("hypertension") == "yes":
+        terms.append("family history hypertension chronic blood pressure")
+    if fh.get("clotting_disorders") == "yes":
+        terms.append("thrombophilia clotting disorder DVT maternal risk")
+    if fh.get("autoimmune") == "yes":
+        terms.append("autoimmune lupus thyroid preeclampsia risk")
 
     query = " ".join(
         terms) if terms else "routine antenatal check normal pregnancy"
