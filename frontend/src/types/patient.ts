@@ -83,3 +83,34 @@ export interface PatientsResponse {
   summary: PatientsSummary;
   patients: Patient[];
 }
+
+export type FamilyHistoryAnswer = 'yes' | 'no' | 'unknown';
+
+export interface FamilyHistory {
+  preeclampsia_eclampsia?: FamilyHistoryAnswer;
+  hypertension?: FamilyHistoryAnswer;
+  diabetes_t2?: FamilyHistoryAnswer;
+  gestational_diabetes?: FamilyHistoryAnswer;
+  clotting_disorders?: FamilyHistoryAnswer;
+  autoimmune?: FamilyHistoryAnswer;
+  preterm_or_miscarriage?: FamilyHistoryAnswer;
+  sickle_cell_thalassemia?: FamilyHistoryAnswer;
+  notes?: string;
+}
+
+export interface PatientEnrollRequest {
+  name: string;
+  phone_number: string;
+  gestational_age_at_enrollment: number;
+  estimated_due_date?: string | null;
+  status: 'pregnant' | 'postpartum';
+  address?: string | null;
+  risk_factors?: {
+    primigravida?: boolean;
+    prior_preeclampsia?: boolean;
+    chronic_hypertension?: boolean;
+    multiple_gestation?: boolean;
+    prior_pph?: boolean;
+    family_history?: FamilyHistory;
+  };
+}
