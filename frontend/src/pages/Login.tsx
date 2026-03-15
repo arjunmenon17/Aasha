@@ -280,7 +280,7 @@ export function Login({ onEnter }: LoginProps) {
             className="text-sm tracking-[0.3em] uppercase mb-10 font-medium"
             style={{ fontFamily: 'Outfit, system-ui, sans-serif', color: TEXT_COLOR }}
           >
-            Monitoring Pregnancies Beyond the Clinic
+            Equal Care for All
           </p>
 
           <button

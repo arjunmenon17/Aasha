@@ -73,7 +73,7 @@ export function App() {
               AASHA
             </h1>
             <div className="text-xs sm:text-sm text-slate-500 uppercase tracking-[0.18em]">
-              Monitoring Pregnancies Beyond the Clinic
+              Equal Care for All
             </div>
           </div>
         </div>
