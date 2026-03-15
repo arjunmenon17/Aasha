@@ -1,5 +1,4 @@
-# Aasha — AI-Powered Maternal Health Surveillance System
-
+# Aasha — Equal Care for All
 > *Hope* (Sanskrit) — Continuous care for women who cannot reach a clinic.
 
 Aasha monitors pregnant and postpartum women in low-resource settings **via SMS only**. No smartphone, no app, and no internet are required on the patient side. The system runs entirely on basic feature-phone SMS.
