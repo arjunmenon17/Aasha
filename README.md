@@ -30,6 +30,9 @@ Aasha monitors pregnant and postpartum women in low-resource settings **via SMS 
 - **Risk tiers** — **Tier 0** (Normal), **Tier 1** (Watch), **Tier 2** (Concern — CHW alert, daily check-ins), **Tier 3** (Emergency — simultaneous SMS to patient, CHW, transport, and facility + follow-up loop).
 - **Escalation** — Tier 3 triggers immediate multi-party SMS and an APScheduler follow-up loop (e.g. every 10 min) until the event is resolved or timeout.
 - **CHW dashboard** — React SPA for community health workers: patient list by tier, clinical assessment details, symptom timeline, and quick actions.
+- **Patient enrollment** — CHWs can enroll new patients directly from the dashboard (name, phone, gestational age, personal risk factors, family history). Triggers a welcome SMS and first check-in schedule.
+- **Authentication** — CHW login with username/password credentials. Session token persisted in-memory; 401 responses auto-logout.
+- **Marketing landing page** — Public-facing home page with animated fluid background, About section (Problem → Solution → Mission carousel), and a Join Us contact modal.
 
 Conditions monitored include preeclampsia/eclampsia, postpartum hemorrhage (PPH), postpartum sepsis, and reduced fetal movement, following WHO/FIGO-style guidance ingested into Moorcheh.
 
@@ -46,7 +49,7 @@ Conditions monitored include preeclampsia/eclampsia, postpartum hemorrhage (PPH)
 | Free-text classify | Claude Haiku 4.5                   |
 | SMS                | Twilio SMS API                      |
 | Scheduler          | APScheduler (AsyncIOScheduler)      |
-| Frontend           | React 18, TypeScript, Tailwind CSS  |
+| Frontend           | React 18, TypeScript, Tailwind CSS (npm + PostCSS) |
 | Charts              | Recharts                            |
 | ORM                 | SQLAlchemy async + asyncpg          |
 | Local tunnel        | ngrok (for Twilio webhooks)         |
@@ -173,7 +176,7 @@ Ensure `BASE_URL` in `.env` points to your public URL (e.g. ngrok) so Twilio can
 Aasha/
 ├── backend/
 │   ├── app/
-│   │   ├── api/           # Routes (patients, webhooks, demo, etc.)
+│   │   ├── api/           # Routes (patients, auth, webhooks, demo, etc.)
 │   │   ├── core/          # Config, database
 │   │   ├── models/        # SQLAlchemy models
 │   │   ├── schemas/       # Pydantic schemas
@@ -182,7 +185,20 @@ Aasha/
 │   │   └── ingest_corpus.py   # Moorcheh namespace + document ingestion
 │   ├── requirements.txt
 │   └── .env.example
-├── frontend/              # React dashboard (patient list, detail, polling)
+├── frontend/
+│   └── src/
+│       ├── api/           # client.ts, patients.ts, auth.ts
+│       ├── components/
+│       │   ├── dashboard/ # PatientList, SummaryCards, RiskRouteMap, Severity3DGraph
+│       │   ├── enrollment/ # EnrollmentForm (4-section patient enrollment)
+│       │   ├── login/     # FluidBackground (WebGL fluid), Flower (animated SVG)
+│       │   ├── patient/   # PatientDetail, SymptomChart
+│       │   └── ui/        # TierBadge, FloralBackdrop
+│       ├── constants/     # tiers.ts (TIER_BG, TIER_BADGE, TIER_TEXT, etc.)
+│       ├── hooks/         # usePatients, usePatientDetail
+│       ├── pages/         # Login (landing + auth), Dashboard, PatientDetailPage
+│       ├── types/         # patient.ts, auth.ts (TypeScript interfaces)
+│       └── utils/         # gestation.ts, time.ts
 ├── CLAUDE.md              # Full system specification and build order
 └── README.md
 ```
@@ -194,7 +210,9 @@ Aasha/
 - **Messaging engine** — Twilio webhook handler, conversation state machine, question tree, response parsing (including Claude Haiku for free-text classification), and check-in scheduling (APScheduler).
 - **Clinical reasoning agent** — Builds patient context, builds NL query, runs Moorcheh `similarity_search`, builds prompt with protocol chunks, calls Claude for structured JSON risk assessment, persists to `clinical_assessments`, updates patient risk tier and baseline, triggers escalation if tier ≥ 2.
 - **Escalation engine** — Tier-based SMS (CHW only for Tier 1–2; patient + CHW + transport + facility for Tier 3), escalation event tracking, and APScheduler follow-up loop with inbound SMS reply handling (e.g. RESPONDING, UNAVAILABLE, RESOLVED, YES/NO).
-- **CHW dashboard** — Patient list with tier badges and summary cards, patient detail with assessment, symptom timeline (e.g. Recharts), and quick actions; polls `/api/patients` every 30s.
+- **CHW dashboard** — Patient list with tier badges and summary cards, patient detail with assessment, symptom timeline (Recharts), and quick actions; polls `/api/patients` every 30s.
+- **Enrollment form** — 4-section form (patient details, pregnancy info, personal risk factors, family history) accessible from the dashboard header. Calls `POST /api/patients/enroll`.
+- **Authentication flow** — `/login` route with username/password form; token stored in memory; auto-logout on 401; session validated via `GET /api/auth/me` on page load.
 
 ---
 

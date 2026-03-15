@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Login, Dashboard, PatientDetailPage } from '@/pages';
 import { usePatients } from '@/hooks';
-import { FloralBackdrop } from '@/components/ui';
+import { FloralBackdrop, BrandedLoader } from '@/components/ui';
 import { EnrollmentForm } from '@/components/enrollment/EnrollmentForm';
 import { authApi } from '@/api';
 import { getAuthToken, setAuthToken } from '@/api/client';
@@ -89,9 +89,8 @@ export function App() {
     return (
       <div className="min-h-screen relative overflow-hidden app-shell-bg flex items-center justify-center">
         <FloralBackdrop />
-        <div className="text-center relative z-10">
-          <div className="text-3xl font-bold mb-2 text-slate-900">Aasha</div>
-          <div className="text-slate-500">Checking session...</div>
+        <div className="relative z-10">
+          <BrandedLoader message="Checking session..." size="lg" />
         </div>
       </div>
     );
@@ -105,11 +104,11 @@ export function App() {
     return (
       <div className="min-h-screen relative overflow-hidden app-shell-bg flex items-center justify-center">
         <FloralBackdrop />
-        <div className="text-center relative z-10">
-          <div className="text-3xl font-bold mb-2 text-slate-900">Aasha</div>
-          <div className="text-slate-500">
-            {error ? `Error: ${error}` : 'Connecting to server...'}
-          </div>
+        <div className="relative z-10">
+          <BrandedLoader
+            message={error ? `Error: ${error}` : 'Connecting to server...'}
+            size="lg"
+          />
         </div>
       </div>
     );
