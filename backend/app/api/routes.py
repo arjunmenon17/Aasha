@@ -173,6 +173,13 @@ async def enroll_patient(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Phone number already enrolled")
 
+    # Fall back to the enrolling CHW's own ID, then to the system default CHW
+    resolved_chw_id = (
+        patient_data.chw_id
+        or _auth_user.get("chw_id")
+        or (UUID(settings.CHW_DEFAULT_ID) if settings.CHW_DEFAULT_ID else None)
+    )
+
     now = datetime.now(timezone.utc)
     patient = Patient(
         name=patient_data.name,
@@ -181,7 +188,7 @@ async def enroll_patient(
         estimated_due_date=patient_data.estimated_due_date,
         status=patient_data.status or "pregnant",
         risk_factors=patient_data.risk_factors,
-        chw_id=patient_data.chw_id,
+        chw_id=resolved_chw_id,
         health_zone_id=patient_data.health_zone_id,
         facility_id=patient_data.facility_id,
         enrollment_date=now,
