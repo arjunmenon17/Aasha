@@ -208,7 +208,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Patient list — scrollable when long */}
         <div className="lg:col-span-2 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-3 shrink-0 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 shrink-0 gap-2 sm:gap-3">
             <div>
               <h2 className="text-xl font-bold text-slate-900">
                 Patients in Need
@@ -217,7 +217,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                 Ordered by severity (Tier 3 → 0)
               </span>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {(['all', 3, 2, 1, 0] as (RiskTier | 'all')[]).map((tier) => {
                 const label =
                   tier === 'all'
@@ -251,7 +251,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
               })}
             </div>
           </div>
-          <div className="overflow-y-auto max-h-[70vh] pr-1 -mr-1">
+          <div className="overflow-y-auto max-h-[60vh] sm:max-h-[70vh] pr-1 -mr-1 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <PatientList patients={sortedPatients} onSelect={onSelectPatient} />
           </div>
         </div>
@@ -337,7 +337,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
               aria-label="Calendar"
             >
               <div
-                className="bg-white rounded-2xl shadow-xl w-[56rem] h-[32rem] overflow-hidden flex flex-col shrink-0"
+                className="bg-white rounded-2xl shadow-xl w-full max-w-[56rem] h-[90vh] sm:h-[32rem] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0 bg-slate-50/50">
@@ -353,9 +353,9 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                     </svg>
                   </button>
                 </div>
-                <div className="flex flex-1 min-h-0">
+                <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-auto sm:overflow-hidden">
                   {/* Left: calendar */}
-                  <div className="flex flex-col min-w-0 flex-1 border-r border-slate-200 bg-white">
+                  <div className="flex flex-col min-w-0 flex-1 sm:border-r border-b sm:border-b-0 border-slate-200 bg-white">
                     <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 shrink-0">
                       <button
                         type="button"
@@ -470,7 +470,7 @@ export function Dashboard({ data, onSelectPatient }: DashboardProps) {
                   </div>
 
                   {/* Right: appointments panel — single layout; form greyed when no date selected */}
-                  <div className="w-80 shrink-0 self-stretch flex flex-col bg-slate-50 min-h-0 border-l border-slate-200">
+                  <div className="sm:w-80 shrink-0 flex flex-col bg-slate-50 sm:min-h-0 sm:border-l border-slate-200">
                     <div className="p-4 flex flex-col flex-1 min-h-0 overflow-hidden flex-nowrap">
                       <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
                         <h4 className="text-sm font-semibold text-slate-800">

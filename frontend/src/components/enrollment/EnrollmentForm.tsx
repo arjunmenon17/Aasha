@@ -249,7 +249,7 @@ export function EnrollmentForm({ onSuccess, onCancel }: EnrollmentFormProps) {
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Phone Number" required hint="Include country code (e.g. +1 647...)">
                 <input
                   type="text"
@@ -274,7 +274,7 @@ export function EnrollmentForm({ onSuccess, onCancel }: EnrollmentFormProps) {
 
         {/* Section 2 — Pregnancy Information */}
         <SectionCard number={2} title="Pregnancy Information" subtitle="Current clinical status">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Gestational Age" required hint="In weeks">
               <input
                 type="number"
