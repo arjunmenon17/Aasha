@@ -56,20 +56,26 @@ app.add_middleware(
 app.include_router(router)
 
 
-@app.get("/")
-async def root():
-    return {"status": "Aasha is running", "version": "1.0.0"}
-
-
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
 
 
-# Serve frontend dashboard
-FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend" / "public"
+# Serve built frontend (production only — in dev, Vite runs separately on :5173)
+DIST_DIR = Path(__file__).parent.parent.parent / "frontend" / "dist"
 
+if DIST_DIR.exists():
+    # Serve compiled JS/CSS/image assets
+    app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
 
-@app.get("/dashboard")
-async def dashboard():
-    return FileResponse(FRONTEND_DIR / "index.html")
+    # SPA catch-all — must be registered AFTER the API router so /api/* routes win
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        candidate = DIST_DIR / full_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(DIST_DIR / "index.html")
+else:
+    @app.get("/")
+    async def root():
+        return {"status": "Aasha is running", "version": "1.0.0"}
