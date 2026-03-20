@@ -5,6 +5,9 @@ Aasha monitors pregnant and postpartum women in low-resource settings **via SMS 
 
 **Core loop:** Check in 3×/week during pregnancy and daily for the first 2 weeks postpartum → build a personalized clinical baseline per patient → detect deviation using **Moorcheh AI** semantic retrieval + **Claude** clinical reasoning → autonomously coordinate emergency care via SMS when risk escalates.
 
+See our Demo:
+https://www.youtube.com/watch?v=6VcOOIesIVM
+
 ---
 
 ## Table of Contents
