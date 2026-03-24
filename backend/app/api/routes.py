@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.limiter import limiter
 from app.models.models import (
     Patient, ClinicalAssessment, SymptomLog, EscalationEvent, SmsLog,
     CommunityHealthWorker, ConversationState
@@ -120,7 +121,8 @@ def _assert_patient_scope(patient_chw_id, auth_user: dict):
 
 
 @router.post("/api/auth/login", response_model=LoginResponse)
-async def login(credentials: LoginRequest):
+@limiter.limit("10/minute")
+async def login(request: Request, credentials: LoginRequest):
     user = await get_dashboard_user_by_username(credentials.username)
     if not user or not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Invalid username or password")
@@ -147,6 +149,33 @@ async def login(credentials: LoginRequest):
     )
 
 
+@router.post("/api/auth/demo-login", response_model=LoginResponse)
+@limiter.limit("30/minute")
+async def demo_login(request: Request):
+    """Credential-free admin login for demos. Finds the first admin account and issues a token."""
+    user = await get_dashboard_user_by_username("admin")
+    if not user:
+        raise HTTPException(status_code=404, detail="No admin user found")
+    exp = int((datetime.now(timezone.utc) + timedelta(hours=12)).timestamp())
+    token = _sign_token(
+        {
+            "sub": str(user["id"]),
+            "username": user["username"],
+            "role": user.get("role", "admin"),
+            "exp": exp,
+        }
+    )
+    return LoginResponse(
+        access_token=token,
+        user=AuthUserResponse(
+            id=user["id"],
+            username=user["username"],
+            display_name=user.get("display_name", user["username"]),
+            role=user.get("role", "admin"),
+        ),
+    )
+
+
 @router.get("/api/auth/me", response_model=AuthUserResponse)
 async def auth_me(user: dict = Depends(require_auth_user)):
     return AuthUserResponse(
@@ -160,7 +189,9 @@ async def auth_me(user: dict = Depends(require_auth_user)):
 # --- Patient Endpoints ---
 
 @router.post("/api/patients", response_model=EnrollResponse)
+@limiter.limit("20/minute")
 async def enroll_patient(
+    request: Request,
     patient_data: PatientCreate,
     db: AsyncSession = Depends(get_db),
     _auth_user: dict = Depends(require_auth_user),
@@ -299,12 +330,17 @@ async def get_patient(patient_id: UUID, _auth_user: dict = Depends(require_auth_
 
 
 @router.post("/api/patients/{patient_id}/resolve")
-async def resolve_escalation(patient_id: UUID, db: AsyncSession = Depends(get_db)):
+async def resolve_escalation(
+    patient_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _auth_user: dict = Depends(require_auth_user),
+):
     """Resolve active escalation for a patient (idempotent)."""
     patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
     patient = patient_result.scalar_one_or_none()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+    _assert_patient_scope(patient.chw_id, _auth_user)
 
     result = await db.execute(
         select(EscalationEvent)
@@ -346,6 +382,7 @@ def _normalize_phone(phone: str) -> str:
 
 
 @router.post("/api/webhooks/twilio")
+@limiter.limit("120/minute")
 async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Handle inbound SMS from Twilio."""
     form_data = await request.form()

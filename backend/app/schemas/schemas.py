@@ -1,16 +1,17 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # --- Patient ---
 class PatientCreate(BaseModel):
-    name: str
-    phone_number: str
-    gestational_age_at_enrollment: int  # days
+    name: str = Field(min_length=1, max_length=200)
+    phone_number: str = Field(min_length=7, max_length=20)
+    gestational_age_at_enrollment: int = Field(ge=0, le=308)  # 0–44 weeks in days
     estimated_due_date: datetime | None = None
-    status: str = "pregnant"
+    status: Literal["pregnant", "postpartum"] = "pregnant"
+    address: str | None = Field(default=None, max_length=500)
     risk_factors: dict | None = None
     chw_id: UUID | None = None
     health_zone_id: UUID | None = None
@@ -137,8 +138,8 @@ class EnrollResponse(BaseModel):
 
 # --- Auth ---
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=200)
 
 
 class AuthUserResponse(BaseModel):

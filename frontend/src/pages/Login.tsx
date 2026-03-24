@@ -223,22 +223,22 @@ export function Login({ onEnter }: LoginProps) {
     heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleLoginSubmit = async (ev: FormEvent) => {
-    ev.preventDefault();
+  const handleDemoLogin = async () => {
     setAuthError(null);
-    if (!username.trim() || !password) {
-      setAuthError('Please enter username and password');
-      return;
-    }
     setAuthLoading(true);
     try {
-      const result = await authApi.login(username.trim(), password);
+      const result = await authApi.demoLogin();
       onEnter(result.access_token);
     } catch {
-      setAuthError('Invalid username or password');
+      setAuthError('Could not connect to server');
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  const handleLoginSubmit = async (ev: FormEvent) => {
+    ev.preventDefault();
+    handleDemoLogin();
   };
 
   const goPrevWhyImage = () => {
@@ -563,15 +563,16 @@ export function Login({ onEnter }: LoginProps) {
 
           <button
             type="button"
-            onClick={() => setPublicRoute('/login')}
-            className="relative z-10 px-10 py-3.5 rounded-xl bg-white border border-pregnancy font-medium text-sm tracking-wide hover:bg-pregnancy/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#B85050]/15"
+            onClick={handleDemoLogin}
+            disabled={authLoading}
+            className="relative z-10 px-10 py-3.5 rounded-xl bg-white border border-pregnancy font-medium text-sm tracking-wide hover:bg-pregnancy/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#B85050]/15 disabled:opacity-60"
             style={{
               fontFamily: 'Outfit, system-ui, sans-serif',
               color: BUTTON_TEXT_COLOR,
               transform: `translate3d(${(cursor.x - 50) * -0.05}px, ${(cursor.y - 50) * -0.04}px, 0)`,
             }}
           >
-            Login
+            {authLoading ? 'Signing in…' : 'Login'}
           </button>
 
           <button
@@ -791,11 +792,12 @@ export function Login({ onEnter }: LoginProps) {
             </button>
             <button
               type="button"
-              onClick={() => setPublicRoute('/login')}
-              className="px-4 py-2 rounded-lg border border-pregnancy bg-white text-pregnancy text-sm font-medium hover:bg-pregnancy/5 transition-colors"
+              onClick={handleDemoLogin}
+              disabled={authLoading}
+              className="px-4 py-2 rounded-lg border border-pregnancy bg-white text-pregnancy text-sm font-medium hover:bg-pregnancy/5 transition-colors disabled:opacity-60"
               style={{ fontFamily: 'Outfit, system-ui, sans-serif' }}
             >
-              Enter dashboard
+              {authLoading ? 'Signing in…' : 'Enter dashboard'}
             </button>
           </div>
         </div>
