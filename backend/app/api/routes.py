@@ -100,6 +100,16 @@ async def require_auth_user(authorization: str | None = Header(default=None)) ->
         user_id = UUID(payload["sub"])
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token subject")
+    # In demo mode: trust the signed token claims without a DB round-trip.
+    if settings.DEMO_MODE:
+        return {
+            "id": user_id,
+            "username": payload.get("username", "admin"),
+            "display_name": payload.get("username", "Demo Admin"),
+            "role": payload.get("role", "admin"),
+            "is_active": True,
+            "chw_id": None,
+        }
     user = await get_dashboard_user_by_id(user_id)
     if not user or not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="User not found or inactive")
@@ -150,11 +160,22 @@ async def login(credentials: LoginRequest, _rl=Depends(rate_limit(10))):
 
 @router.post("/api/auth/demo-login", response_model=LoginResponse)
 async def demo_login(_rl=Depends(rate_limit(30))):
-    """Credential-free admin login for demos. Finds the first admin account and issues a token."""
+    """Credential-free admin login for demos."""
+    exp = int((datetime.now(timezone.utc) + timedelta(hours=12)).timestamp())
+
+    if settings.DEMO_MODE:
+        # Skip DB entirely: issue a signed demo-admin token directly.
+        demo_id = UUID("00000000-0000-0000-0000-000000000001")
+        token = _sign_token({"sub": str(demo_id), "username": "admin", "role": "admin", "exp": exp})
+        return LoginResponse(
+            access_token=token,
+            user=AuthUserResponse(id=demo_id, username="admin", display_name="Demo Admin", role="admin"),
+        )
+
+    # Production path: look up the real admin account.
     user = await get_dashboard_user_by_username("admin")
     if not user:
         raise HTTPException(status_code=404, detail="No admin user found")
-    exp = int((datetime.now(timezone.utc) + timedelta(hours=12)).timestamp())
     token = _sign_token(
         {
             "sub": str(user["id"]),
