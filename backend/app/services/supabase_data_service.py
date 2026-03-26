@@ -41,7 +41,7 @@ async def _get(path: str, params: dict[str, str]) -> list[dict]:
 
 async def _get_optional(path: str, params: dict[str, str]) -> list[dict]:
     """Best-effort GET for optional tables/columns.
-    Returns [] on 4xx so one missing column does not break whole detail endpoint.
+    Returns [] on 4xx or network errors so one failure doesn't crash the endpoint.
     """
     try:
         return await _get(path, params)
@@ -49,6 +49,9 @@ async def _get_optional(path: str, params: dict[str, str]) -> list[dict]:
         if 400 <= exc.response.status_code < 500:
             return []
         raise
+    except httpx.RequestError:
+        # DNS failure, connection refused, timeout, etc.
+        return []
 
 
 def _coerce_float(value) -> float | None:
@@ -209,13 +212,20 @@ def _normalize_log(raw: dict) -> dict:
 
 
 async def list_patients(chw_id: UUID | None = None) -> list[dict]:
+    from fastapi import HTTPException
     params = {
         "select": "*",
         "order": "current_risk_tier.desc,gestational_age_at_enrollment.asc",
     }
     if chw_id is not None:
         params["chw_id"] = f"eq.{chw_id}"
-    rows = await _get("patients", params)
+    try:
+        rows = await _get("patients", params)
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Cannot reach Supabase — check SUPABASE_URL: {exc}",
+        ) from exc
     return [_normalize_patient(r) for r in rows]
 
 
