@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.limiter import limiter
+from app.core.limiter import rate_limit
 from app.models.models import (
     Patient, ClinicalAssessment, SymptomLog, EscalationEvent, SmsLog,
     CommunityHealthWorker, ConversationState
@@ -121,8 +121,7 @@ def _assert_patient_scope(patient_chw_id, auth_user: dict):
 
 
 @router.post("/api/auth/login", response_model=LoginResponse)
-@limiter.limit("10/minute")
-async def login(request: Request, credentials: LoginRequest):
+async def login(credentials: LoginRequest, _rl=Depends(rate_limit(10))):
     user = await get_dashboard_user_by_username(credentials.username)
     if not user or not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Invalid username or password")
@@ -150,8 +149,7 @@ async def login(request: Request, credentials: LoginRequest):
 
 
 @router.post("/api/auth/demo-login", response_model=LoginResponse)
-@limiter.limit("30/minute")
-async def demo_login(request: Request):
+async def demo_login(_rl=Depends(rate_limit(30))):
     """Credential-free admin login for demos. Finds the first admin account and issues a token."""
     user = await get_dashboard_user_by_username("admin")
     if not user:
@@ -189,10 +187,9 @@ async def auth_me(user: dict = Depends(require_auth_user)):
 # --- Patient Endpoints ---
 
 @router.post("/api/patients", response_model=EnrollResponse)
-@limiter.limit("20/minute")
 async def enroll_patient(
-    request: Request,
     patient_data: PatientCreate,
+    _rl=Depends(rate_limit(20)),
     db: AsyncSession = Depends(get_db),
     _auth_user: dict = Depends(require_auth_user),
 ):
@@ -382,8 +379,7 @@ def _normalize_phone(phone: str) -> str:
 
 
 @router.post("/api/webhooks/twilio")
-@limiter.limit("120/minute")
-async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+async def twilio_webhook(request: Request, db: AsyncSession = Depends(get_db), _rl=Depends(rate_limit(120))):
     """Handle inbound SMS from Twilio."""
     form_data = await request.form()
     from_number = form_data.get("From", "")

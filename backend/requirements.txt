@@ -12,4 +12,3 @@ pydantic
 pydantic-settings
 httpx
 python-multipart
-slowapi

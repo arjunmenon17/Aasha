@@ -1,18 +1,16 @@
 import logging
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi.errors import RateLimitExceeded
 
 from app.api.routes import router
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.core.limiter import limiter
+from app.core.limiter import _RateLimitExceeded, rate_limit_exception_handler
 from app.services.scheduler_service import start_scheduler, stop_scheduler
 
 logging.basicConfig(
@@ -48,17 +46,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Rate limiter
-app.state.limiter = limiter
+# Rate limit exception handler (custom, no external deps)
+app.add_exception_handler(_RateLimitExceeded, rate_limit_exception_handler)
 
-
-async def _on_rate_limit_exceeded(request: Request, exc: RateLimitExceeded):
-    return JSONResponse(status_code=429, content={"detail": "Too many requests"})
-
-
-app.add_exception_handler(RateLimitExceeded, _on_rate_limit_exceeded)
-
-# CORS — explicit allowlist (wildcard + credentials violates CORS spec)
+# CORS — explicit allowlist
 _ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
