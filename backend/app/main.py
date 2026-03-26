@@ -2,15 +2,13 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
-from app.core.config import settings
 from app.core.database import engine, Base
-from app.core.limiter import _RateLimitExceeded, rate_limit_exception_handler
 from app.services.scheduler_service import start_scheduler, stop_scheduler
 
 logging.basicConfig(
@@ -46,36 +44,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Rate limit exception handler (custom, no external deps)
-app.add_exception_handler(_RateLimitExceeded, rate_limit_exception_handler)
-
-# CORS — explicit allowlist
-_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-]
-if settings.BASE_URL:
-    _ALLOWED_ORIGINS.append(settings.BASE_URL.rstrip("/"))
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-
-# Security response headers
-@app.middleware("http")
-async def security_headers_middleware(request: Request, call_next):
-    response = await call_next(request)
-    response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "DENY")
-    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.setdefault("X-XSS-Protection", "1; mode=block")
-    return response
-
 
 app.include_router(router)
 
